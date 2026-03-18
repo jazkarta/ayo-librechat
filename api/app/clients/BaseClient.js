@@ -163,6 +163,17 @@ class BaseClient {
       url = this.options.reverseProxyUrl;
     }
     logger.debug(`Making request to ${url}`);
+
+    if (init) {
+      init.headers = init.headers || {};
+      if (this.conversationId) {
+        init.headers['x-chat-session-id'] = this.conversationId;
+      }
+      if (this.options.req && this.options.req.user && this.options.req.user.email) {
+        init.headers['x-user-email'] = this.options.req.user.email;
+      }
+    }
+
     if (typeof Bun !== 'undefined') {
       return await fetch(url, init);
     }
@@ -274,11 +285,11 @@ class BaseClient {
     const userMessage = opts.isEdited
       ? this.currentMessages[this.currentMessages.length - 2]
       : this.createUserMessage({
-          messageId: userMessageId,
-          parentMessageId,
-          conversationId,
-          text: message,
-        });
+        messageId: userMessageId,
+        parentMessageId,
+        conversationId,
+        text: message,
+      });
 
     if (typeof opts?.getReqData === 'function') {
       opts.getReqData({

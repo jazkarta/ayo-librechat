@@ -59,6 +59,10 @@ export async function initializeOpenAI({
     proxy: PROXY ?? undefined,
     reverseProxyUrl: baseURL || undefined,
     streaming: true,
+    headers: {
+      'x-user-email': req.user?.email,
+      'x-chat-session-id': req.body?.conversationId,
+    },
   };
 
   const isAzureOpenAI = endpoint === EModelEndpoint.azureOpenAI;
@@ -125,7 +129,11 @@ export async function initializeOpenAI({
   const modelOptions = {
     ...(model_parameters ?? {}),
     model: modelName,
-    user: req.user?.id,
+    user: JSON.stringify({
+      id: req.user?.id ?? '',
+      email: req.user?.email ?? '',
+      session: req.body?.conversationId ?? '',
+    }),
   };
 
   const finalClientOptions: OpenAIConfigOptions = {

@@ -158,7 +158,14 @@ export async function initializeCustom({
     ...customOptions,
   };
 
-  const modelOptions = { ...(model_parameters ?? {}), user: userId };
+  const modelOptions = {
+    ...(model_parameters ?? {}),
+    user: JSON.stringify({
+      id: req.user?.id ?? '',
+      email: req.user?.email ?? '',
+      session: req.body?.conversationId ?? '',
+    }),
+  };
   const finalClientOptions = {
     modelOptions,
     ...clientOptions,
