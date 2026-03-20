@@ -131,8 +131,10 @@ export async function initializeOpenAI({
     model: modelName,
     user: JSON.stringify({
       id: req.user?.id ?? '',
-      email: req.user?.email ?? '',
-      session: req.body?.conversationId ?? '',
+      email: req.user?.email || req.user?.username || '',
+      session: (req.body?.conversationId && req.body?.conversationId !== 'new') 
+        ? req.body.conversationId 
+        : (req.body?.messageId || 'new_session'),
     }),
   };
 

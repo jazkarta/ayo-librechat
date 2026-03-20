@@ -163,7 +163,7 @@ export async function initializeCustom({
     user: JSON.stringify({
       id: req.user?.id ?? '',
       email: req.user?.email ?? '',
-      session: req.body?.conversationId ?? '',
+      conversationId: req.body?.conversationId ?? 'new-session'
     }),
   };
   const finalClientOptions = {
