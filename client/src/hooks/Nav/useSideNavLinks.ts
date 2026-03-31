@@ -95,6 +95,7 @@ export default function useSideNavLinks({
 
     if (
       endpointsConfig?.[EModelEndpoint.agents] &&
+      interfaceConfig.agents !== false &&
       hasAccessToAgents &&
       hasAccessToCreateAgents &&
       endpointsConfig[EModelEndpoint.agents].disableBuilder !== true
@@ -108,7 +109,7 @@ export default function useSideNavLinks({
       });
     }
 
-    if (hasAccessToPrompts) {
+    if (hasAccessToPrompts && interfaceConfig.prompts?.use !== false) {
       links.push({
         title: 'com_ui_prompts',
         label: '',
@@ -118,7 +119,7 @@ export default function useSideNavLinks({
       });
     }
 
-    if (hasAccessToMemories && hasAccessToReadMemories) {
+    if (interfaceConfig.memories !== false && hasAccessToMemories && hasAccessToReadMemories) {
       links.push({
         title: 'com_ui_memories',
         label: '',
@@ -143,15 +144,17 @@ export default function useSideNavLinks({
       });
     }
 
-    links.push({
-      title: 'com_sidepanel_attach_files',
-      label: '',
-      icon: AttachmentIcon,
-      id: 'files',
-      Component: FilesPanel,
-    });
+    if (interfaceConfig.fileSearch !== false) {
+      links.push({
+        title: 'com_sidepanel_attach_files',
+        label: '',
+        icon: AttachmentIcon,
+        id: 'files',
+        Component: FilesPanel,
+      });
+    }
 
-    if (hasAccessToBookmarks) {
+    if (interfaceConfig.bookmarks !== false && hasAccessToBookmarks) {
       links.push({
         title: 'com_sidepanel_conversation_tags',
         label: '',
@@ -162,8 +165,9 @@ export default function useSideNavLinks({
     }
 
     if (
-      (hasAccessToUseMCPSettings && availableMCPServers && availableMCPServers.length > 0) ||
-      hasAccessToCreateMCP
+      interfaceConfig.mcpServers !== false &&
+      ((hasAccessToUseMCPSettings && availableMCPServers && availableMCPServers.length > 0) ||
+        hasAccessToCreateMCP)
     ) {
       links.push({
         title: 'com_nav_setting_mcp',
