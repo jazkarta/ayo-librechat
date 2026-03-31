@@ -1,10 +1,9 @@
 const express = require('express');
-const { logger } = require('@librechat/data-schemas');
 const { isEnabled, getBalanceConfig } = require('@librechat/api');
-const { Constants, CacheKeys, defaultSocialLogins } = require('librechat-data-provider');
+const { CacheKeys, defaultSocialLogins } = require('librechat-data-provider');
+const { logger, getTenantId, scopedCacheKey } = require('@librechat/data-schemas');
 const { getLdapConfig } = require('~/server/services/Config/ldap');
 const { getAppConfig } = require('~/server/services/Config/app');
-const { getProjectByName } = require('~/models/Project');
 const { getLogStores } = require('~/cache');
 
 const router = express.Router();
@@ -16,9 +15,7 @@ const sharedLinksEnabled =
   process.env.ALLOW_SHARED_LINKS === undefined || isEnabled(process.env.ALLOW_SHARED_LINKS);
 
 const publicSharedLinksEnabled =
-  sharedLinksEnabled &&
-  (process.env.ALLOW_SHARED_LINKS_PUBLIC === undefined ||
-    isEnabled(process.env.ALLOW_SHARED_LINKS_PUBLIC));
+  sharedLinksEnabled && isEnabled(process.env.ALLOW_SHARED_LINKS_PUBLIC);
 
 const sharePointFilePickerEnabled = isEnabled(process.env.ENABLE_SHAREPOINT_FILEPICKER);
 const openidReuseTokens = isEnabled(process.env.OPENID_REUSE_TOKENS);
@@ -26,7 +23,8 @@ const openidReuseTokens = isEnabled(process.env.OPENID_REUSE_TOKENS);
 router.get('/', async function (req, res) {
   const cache = getLogStores(CacheKeys.CONFIG_STORE);
 
-  const cachedStartupConfig = await cache.get(CacheKeys.STARTUP_CONFIG);
+  const cacheKey = scopedCacheKey(CacheKeys.STARTUP_CONFIG);
+  const cachedStartupConfig = await cache.get(cacheKey);
   if (cachedStartupConfig) {
     res.send(cachedStartupConfig);
     return;
@@ -37,12 +35,13 @@ router.get('/', async function (req, res) {
     return today.getMonth() === 1 && today.getDate() === 11;
   };
 
-  const instanceProject = await getProjectByName(Constants.GLOBAL_PROJECT_NAME, '_id');
-
   const ldap = getLdapConfig();
 
   try {
-    const appConfig = await getAppConfig({ role: req.user?.role });
+    const appConfig = await getAppConfig({
+      role: req.user?.role,
+      tenantId: req.user?.tenantId || getTenantId(),
+    });
 
     const isOpenIdEnabled =
       !!process.env.OPENID_CLIENT_ID &&
@@ -101,7 +100,6 @@ router.get('/', async function (req, res) {
       sharedLinksEnabled,
       publicSharedLinksEnabled,
       analyticsGtmId: process.env.ANALYTICS_GTM_ID,
-      instanceProjectId: instanceProject._id.toString(),
       bundlerURL: process.env.SANDPACK_BUNDLER_URL,
       staticBundlerURL: process.env.SANDPACK_STATIC_BUNDLER_URL,
       sharePointFilePickerEnabled,
@@ -147,7 +145,7 @@ router.get('/', async function (req, res) {
       payload.customFooter = process.env.CUSTOM_FOOTER;
     }
 
-    await cache.set(CacheKeys.STARTUP_CONFIG, payload);
+    await cache.set(cacheKey, payload);
     return res.status(200).send(payload);
   } catch (err) {
     logger.error('Error in startup config', err);

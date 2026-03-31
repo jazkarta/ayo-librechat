@@ -29,6 +29,12 @@ The source code for `@librechat/agents` (major backend dependency, same team) is
 
 ## Code Style
 
+### Naming and File Organization
+
+- **Single-word file names** whenever possible (e.g., `permissions.ts`, `capabilities.ts`, `service.ts`).
+- When multiple words are needed, prefer grouping related modules under a **single-word directory** rather than using multi-word file names (e.g., `admin/capabilities.ts` not `adminCapabilities.ts`).
+- The directory already provides context — `app/service.ts` not `app/appConfigService.ts`.
+
 ### Structure and Clarity
 
 - **Never-nesting**: early returns, flat code, minimal indentation. Break complex operations into well-named helpers.
@@ -149,7 +155,15 @@ Multi-line imports count total character length across all lines. Consolidate va
 - Run tests from their workspace directory: `cd api && npx jest <pattern>`, `cd packages/api && npx jest <pattern>`, etc.
 - Frontend tests: `__tests__` directories alongside components; use `test/layout-test-utils` for rendering.
 - Cover loading, success, and error states for UI/data flows.
-- Mock data-provider hooks and external dependencies.
+
+### Philosophy
+
+- **Real logic over mocks.** Exercise actual code paths with real dependencies. Mocking is a last resort.
+- **Spies over mocks.** Assert that real functions are called with expected arguments and frequency without replacing underlying logic.
+- **MongoDB**: use `mongodb-memory-server` for a real in-memory MongoDB instance. Test actual queries and schema validation, not mocked DB calls.
+- **MCP**: use real `@modelcontextprotocol/sdk` exports for servers, transports, and tool definitions. Mirror real scenarios, don't stub SDK internals.
+- Only mock what you cannot control: external HTTP APIs, rate-limited services, non-deterministic system calls.
+- Heavy mocking is a code smell, not a testing strategy.
 
 ---
 

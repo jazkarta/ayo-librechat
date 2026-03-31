@@ -214,6 +214,25 @@ describe('getModelMaxTokens', () => {
     );
   });
 
+  test('should return correct tokens for gpt-5.4 matches', () => {
+    expect(getModelMaxTokens('gpt-5.4')).toBe(maxTokensMap[EModelEndpoint.openAI]['gpt-5.4']);
+    expect(getModelMaxTokens('gpt-5.4-thinking')).toBe(
+      maxTokensMap[EModelEndpoint.openAI]['gpt-5.4'],
+    );
+    expect(getModelMaxTokens('openai/gpt-5.4')).toBe(
+      maxTokensMap[EModelEndpoint.openAI]['gpt-5.4'],
+    );
+  });
+
+  test('should return correct tokens for gpt-5.4-pro matches', () => {
+    expect(getModelMaxTokens('gpt-5.4-pro')).toBe(
+      maxTokensMap[EModelEndpoint.openAI]['gpt-5.4-pro'],
+    );
+    expect(getModelMaxTokens('openai/gpt-5.4-pro')).toBe(
+      maxTokensMap[EModelEndpoint.openAI]['gpt-5.4-pro'],
+    );
+  });
+
   test('should return correct tokens for Anthropic models', () => {
     const models = [
       'claude-2.1',
@@ -495,6 +514,8 @@ describe('getModelMaxTokens', () => {
       'gpt-5.1',
       'gpt-5.2',
       'gpt-5.3',
+      'gpt-5.4',
+      'gpt-5.4-pro',
       'gpt-5-mini',
       'gpt-5-nano',
       'gpt-5-pro',
@@ -802,6 +823,12 @@ describe('matchModelName', () => {
     expect(matchModelName('openai/gpt-5.3')).toBe('gpt-5.3');
     expect(matchModelName('gpt-5.3-codex')).toBe('gpt-5.3');
     expect(matchModelName('gpt-5.3-2025-03-01')).toBe('gpt-5.3');
+  });
+
+  it('should return the closest matching key for gpt-5.4 matches', () => {
+    expect(matchModelName('openai/gpt-5.4')).toBe('gpt-5.4');
+    expect(matchModelName('gpt-5.4-thinking')).toBe('gpt-5.4');
+    expect(matchModelName('gpt-5.4-pro')).toBe('gpt-5.4-pro');
   });
 
   it('should return the input model name if no match is found - Google models', () => {
@@ -1783,6 +1810,60 @@ describe('GLM Model Tests (Zhipu AI)', () => {
       expect(matchModelName('zai-org/GLM-4.6')).toBe('glm-4.6');
       expect(matchModelName('zai-org/GLM-4.5V')).toBe('glm-4.5v');
       expect(matchModelName('zai-org/GLM-4-32B-0414')).toBe('glm-4-32b');
+    });
+  });
+});
+
+describe('Mistral Model Tests', () => {
+  describe('getModelMaxTokens', () => {
+    test('should return correct tokens for mistral-large-3 (256k context)', () => {
+      expect(getModelMaxTokens('mistral-large-3', EModelEndpoint.custom)).toBe(
+        maxTokensMap[EModelEndpoint.custom]['mistral-large-3'],
+      );
+    });
+
+    test('should match mistral-large-3 for suffixed variants', () => {
+      expect(getModelMaxTokens('mistral-large-3-instruct', EModelEndpoint.custom)).toBe(
+        maxTokensMap[EModelEndpoint.custom]['mistral-large-3'],
+      );
+    });
+
+    test('should not match mistral-large-3 for generic mistral-large', () => {
+      expect(getModelMaxTokens('mistral-large', EModelEndpoint.custom)).toBe(
+        maxTokensMap[EModelEndpoint.custom]['mistral-large'],
+      );
+      expect(getModelMaxTokens('mistral-large-latest', EModelEndpoint.custom)).toBe(
+        maxTokensMap[EModelEndpoint.custom]['mistral-large'],
+      );
+    });
+  });
+
+  describe('matchModelName', () => {
+    test('should match mistral-large-3 exactly', () => {
+      expect(matchModelName('mistral-large-3', EModelEndpoint.custom)).toBe('mistral-large-3');
+    });
+
+    test('should match mistral-large-3 for prefixed/suffixed variants', () => {
+      expect(matchModelName('mistral/mistral-large-3', EModelEndpoint.custom)).toBe(
+        'mistral-large-3',
+      );
+      expect(matchModelName('mistral-large-3-instruct', EModelEndpoint.custom)).toBe(
+        'mistral-large-3',
+      );
+    });
+
+    test('should match generic mistral-large for non-3 variants', () => {
+      expect(matchModelName('mistral-large-latest', EModelEndpoint.custom)).toBe('mistral-large');
+    });
+  });
+
+  describe('findMatchingPattern', () => {
+    test('should prefer mistral-large-3 over mistral-large for mistral-large-3 variants', () => {
+      const result = findMatchingPattern(
+        'mistral-large-3-instruct',
+        maxTokensMap[EModelEndpoint.custom],
+      );
+      expect(result).toBe('mistral-large-3');
     });
   });
 });
