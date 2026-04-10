@@ -311,56 +311,50 @@ html {
 
 @font-face {
   font-display: swap;
-  font-family: Inter;
+  font-family: 'Helvetica Neue';
   font-style: normal;
   font-weight: 400;
-  src: url('$fonts/Inter-Regular.woff2') format('woff2');
-  size-adjust: 94%;
+  src: url('$fonts/HelveticaNeueLight.ttf') format('truetype');
 }
 
 @font-face {
   font-display: swap;
-  font-family: Inter;
+  font-family: 'Helvetica Neue';
   font-style: italic;
   font-weight: 400;
-  src: url('$fonts/Inter-Italic.woff2') format('woff2');
-  size-adjust: 94%;
+  src: url('$fonts/HelveticaNeueItalic.ttf') format('truetype');
 }
 
 @font-face {
   font-display: swap;
-  font-family: Inter;
+  font-family: 'Helvetica Neue';
   font-style: normal;
   font-weight: 500;
-  src: url('$fonts/Inter-SemiBold.woff2') format('woff2');
-  size-adjust: 94%;
+  src: url('$fonts/HelveticaNeueMedium.ttf') format('truetype');
 }
 
 @font-face {
   font-display: swap;
-  font-family: Inter;
+  font-family: 'Helvetica Neue';
   font-style: italic;
   font-weight: 500;
-  src: url('$fonts/Inter-SemiBoldItalic.woff2') format('woff2');
-  size-adjust: 94%;
+  src: url('$fonts/HelveticaNeueMediumItalic.ttf') format('truetype');
 }
 
 @font-face {
   font-display: swap;
-  font-family: Inter;
+  font-family: 'Helvetica Neue';
   font-style: normal;
   font-weight: 600;
-  src: url('$fonts/Inter-Bold.woff2') format('woff2');
-  size-adjust: 94%;
+  src: url('$fonts/HelveticaNeueBold.ttf') format('truetype');
 }
 
 @font-face {
   font-display: swap;
-  font-family: Inter;
+  font-family: 'Helvetica Neue';
   font-style: italic;
   font-weight: 600;
-  src: url('$fonts/Inter-BoldItalic.woff2') format('woff2');
-  size-adjust: 94%;
+  src: url('$fonts/HelveticaNeueBoldItalic.ttf') format('truetype');
 }
 
 @font-face {
@@ -2133,7 +2127,7 @@ html {
   height: 12px;
   font-family:
     system-ui,
-    Inter,
+    'Helvetica Neue',
     Söhne Circle,
     -apple-system,
     Segoe UI,
@@ -2153,7 +2147,7 @@ html {
     content: '⬤';
     font-family:
       system-ui,
-      Inter,
+      'Helvetica Neue',
       Söhne Circle,
       -apple-system,
       Segoe UI,
@@ -2178,7 +2172,7 @@ html {
     content: '⬤';
     font-family:
       system-ui,
-      Inter,
+      'Helvetica Neue',
       Söhne Circle,
       -apple-system,
       Segoe UI,
