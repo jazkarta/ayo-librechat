@@ -108,7 +108,7 @@ export const TooltipAnchor = forwardRef<HTMLDivElement, TooltipAnchorProps>(func
   { description, side = 'top', className, role, enableHTML = false, ...props },
   ref,
 ) {
-  const tooltip = Ariakit.useTooltipStore({ placement: side });
+  const tooltip = Ariakit.useTooltipStore({ placement: side, showTimeout: 100 });
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {

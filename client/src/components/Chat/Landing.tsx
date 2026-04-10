@@ -187,11 +187,10 @@ export default function Landing({ centerFormOnLanding }: { centerFormOnLanding: 
               key={`split-text-${greetingText}${user?.name ? '-user' : ''}`}
               text={greetingText}
               className="text-[28px] leading-[34px] font-normal text-text-primary"
-              delay={50}
+              delay={0}
               textAlign="center"
-              animationFrom={{ opacity: 0, transform: 'translate3d(0,50px,0)' }}
+              animationFrom={{ opacity: 1, transform: 'translate3d(0,0,0)' }}
               animationTo={{ opacity: 1, transform: 'translate3d(0,0,0)' }}
-              easing={easings.easeOutCubic}
               threshold={0}
               rootMargin="0px"
               onLineCountChange={handleLineCountChange}
