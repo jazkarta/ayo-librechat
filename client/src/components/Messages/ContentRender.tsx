@@ -211,7 +211,7 @@ const ContentRender = memo(function ContentRender({
         <div
           className={cn(
             'flex min-h-[20px] max-w-full flex-grow flex-col gap-0',
-            msg.isCreatedByUser && !edit && 'max-w-[55%] rounded-2xl bg-surface-tertiary px-4 py-2',
+            msg.isCreatedByUser && !edit && 'max-w-[80%] rounded-2xl bg-surface-tertiary px-4 py-2',
           )}
         >
           <ContentParts

@@ -67,7 +67,7 @@ export default function Message(props: TMessageProps) {
               className={cn(
                 'relative flex flex-col',
                 isCreatedByUser
-                  ? 'max-w-[55%] rounded-2xl bg-surface-tertiary px-4 py-2 user-turn'
+                  ? 'max-w-[80%] rounded-2xl bg-surface-tertiary px-4 py-2 user-turn'
                   : 'w-11/12 agent-turn',
               )}
             >
