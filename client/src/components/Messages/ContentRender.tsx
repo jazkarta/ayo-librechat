@@ -159,9 +159,9 @@ const ContentRender = memo(function ContentRender({
       return 'w-full max-w-full md:px-5 lg:px-1 xl:px-5';
     }
     if (hasParallelContent) {
-      return 'md:max-w-[58rem] xl:max-w-[70rem]';
+      return 'md:max-w-[46rem] xl:max-w-[54rem]';
     }
-    return 'md:max-w-[47rem] xl:max-w-[55rem]';
+    return 'md:max-w-[42.5rem] xl:max-w-[42.5rem]';
   };
 
   const baseClasses = {
