@@ -1,6 +1,7 @@
 import { memo, useRef, useMemo, useEffect, useState, useCallback } from 'react';
+import { Plus } from 'lucide-react';
 import { useWatch } from 'react-hook-form';
-import { TextareaAutosize } from '@librechat/client';
+import { TextareaAutosize, TooltipAnchor } from '@librechat/client';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { Constants, isAssistantsEndpoint, isAgentsEndpoint } from 'librechat-data-provider';
 import type { TConversation } from 'librechat-data-provider';
@@ -71,6 +72,8 @@ const ChatForm = memo(function ChatForm({
   const [visualRowCount, setVisualRowCount] = useState(1);
   const [isTextAreaFocused, setIsTextAreaFocused] = useState(false);
   const [backupBadges, setBackupBadges] = useState<Pick<BadgeItem, 'id'>[]>([]);
+  const [plusMenuOpen, setPlusMenuOpen] = useState(false);
+  const plusMenuRef = useRef<HTMLDivElement>(null);
 
   const SpeechToText = useRecoilValue(store.speechToText);
   const TextToSpeech = useRecoilValue(store.textToSpeech);
@@ -153,6 +156,17 @@ const ChatForm = memo(function ChatForm({
     isSubmitting,
   });
 
+  useEffect(() => {
+    if (!plusMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (plusMenuRef.current && !plusMenuRef.current.contains(e.target as Node)) {
+        setPlusMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [plusMenuOpen]);
+
   const { submitMessage, submitPrompt } = useSubmitMessage();
 
   const handleKeyUp = useHandleKeyUp({
@@ -219,9 +233,9 @@ const ChatForm = memo(function ChatForm({
   const baseClasses = useMemo(
     () =>
       cn(
-        'md:py-3.5 m-0 w-full resize-none py-[13px] placeholder-black/60 bg-transparent dark:placeholder-white/60 [&:has(textarea:focus)]:shadow-[0_2px_6px_rgba(0,0,0,.05)]',
-        isCollapsed ? 'max-h-[52px]' : 'max-h-[45vh] md:max-h-[55vh]',
-        isMoreThanThreeRows ? 'pl-5' : 'px-5',
+        'm-0 w-full resize-none py-[9px] placeholder-black/60 bg-transparent dark:placeholder-white/60 [&:has(textarea:focus)]:shadow-[0_2px_6px_rgba(0,0,0,.05)]',
+        isCollapsed ? 'max-h-[40px]' : 'max-h-[45vh] md:max-h-[55vh]',
+        'px-2',
       ),
     [isCollapsed, isMoreThanThreeRows],
   );
@@ -263,7 +277,7 @@ const ChatForm = memo(function ChatForm({
           <div
             onClick={handleContainerClick}
             className={cn(
-              'relative flex w-full flex-grow flex-col overflow-hidden rounded-t-3xl border pb-4 text-text-primary transition-all duration-200 sm:rounded-3xl sm:pb-0',
+              'relative flex w-full flex-grow flex-col rounded-3xl border text-text-primary transition-all duration-200',
               isTextAreaFocused ? 'shadow-lg' : 'shadow-md',
               isTemporary
                 ? 'border-violet-800/60 bg-violet-950/10'
@@ -285,7 +299,53 @@ const ChatForm = memo(function ChatForm({
               setFilesLoading={setFilesLoading}
             />
             {endpoint && (
-              <div className={cn('flex', isRTL ? 'flex-row-reverse' : 'flex-row')}>
+              <div
+                className={cn(
+                  'flex items-center gap-1 px-2 py-1',
+                  isRTL ? 'flex-row-reverse' : 'flex-row',
+                )}
+              >
+                <div ref={plusMenuRef} className="relative flex-shrink-0">
+                  <TooltipAnchor
+                    description={localize('com_ui_add_files_and_more')}
+                    render={
+                      <button
+                        type="button"
+                        onClick={() => setPlusMenuOpen((prev) => !prev)}
+                        aria-label={localize('com_ui_add_files_and_more')}
+                        aria-expanded={plusMenuOpen}
+                        className="flex size-9 items-center justify-center rounded-full transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-opacity-50"
+                      >
+                        <Plus size={24} className="text-text-secondary" />
+                      </button>
+                    }
+                  />
+                  {plusMenuOpen && (
+                    <div className="absolute bottom-full left-0 mb-2 flex flex-col gap-1 rounded-xl border border-border-light bg-surface-primary p-1.5 shadow-lg">
+                      <AttachFileChat
+                        conversation={conversation}
+                        disableInputs={disableInputs}
+                        files={files}
+                        setFiles={setFiles}
+                        setFilesLoading={setFilesLoading}
+                      />
+                      <BadgeRow
+                        showEphemeralBadges={
+                          !!endpoint &&
+                          !isAgentsEndpoint(endpoint) &&
+                          !isAssistantsEndpoint(endpoint)
+                        }
+                        isSubmitting={isSubmitting}
+                        conversationId={conversationId}
+                        specName={conversation?.spec}
+                        onChange={setBadges}
+                        isInChat={
+                          Array.isArray(conversation?.messages) && conversation.messages.length >= 1
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
                 <div
                   className="relative flex-1"
                   style={
@@ -318,7 +378,7 @@ const ChatForm = memo(function ChatForm({
                     onBlur={handleTextareaBlur}
                     aria-label={localize('com_ui_message_input')}
                     onClick={handleFocusOrClick}
-                    style={{ height: 44, overflowY: 'auto' }}
+                    style={{ height: 40, overflowY: 'auto' }}
                     className={cn(
                       baseClasses,
                       removeFocusRings,
@@ -326,66 +386,33 @@ const ChatForm = memo(function ChatForm({
                     )}
                   />
                 </div>
-                <div className="flex flex-col items-start justify-start pr-2.5 pt-1.5">
-                  <CollapseChat
-                    isCollapsed={isCollapsed}
-                    isScrollable={isMoreThanThreeRows}
-                    setIsCollapsed={setIsCollapsed}
+                <CollapseChat
+                  isCollapsed={isCollapsed}
+                  isScrollable={isMoreThanThreeRows}
+                  setIsCollapsed={setIsCollapsed}
+                />
+                {SpeechToText && (
+                  <AudioRecorder
+                    methods={methods}
+                    ask={submitMessage}
+                    textAreaRef={textAreaRef}
+                    disabled={disableInputs || isNotAppendable}
+                    isSubmitting={isSubmitting}
                   />
-                </div>
-              </div>
-            )}
-            <div
-              className={cn(
-                '@container items-between flex gap-2 pb-2',
-                isRTL ? 'flex-row-reverse' : 'flex-row',
-              )}
-            >
-              <div className={`${isRTL ? 'mr-2' : 'ml-2'}`}>
-                <AttachFileChat
-                  conversation={conversation}
-                  disableInputs={disableInputs}
-                  files={files}
-                  setFiles={setFiles}
-                  setFilesLoading={setFilesLoading}
-                />
-              </div>
-              <BadgeRow
-                showEphemeralBadges={
-                  !!endpoint && !isAgentsEndpoint(endpoint) && !isAssistantsEndpoint(endpoint)
-                }
-                isSubmitting={isSubmitting}
-                conversationId={conversationId}
-                specName={conversation?.spec}
-                onChange={setBadges}
-                isInChat={
-                  Array.isArray(conversation?.messages) && conversation.messages.length >= 1
-                }
-              />
-              <div className="mx-auto flex" />
-              {SpeechToText && (
-                <AudioRecorder
-                  methods={methods}
-                  ask={submitMessage}
-                  textAreaRef={textAreaRef}
-                  disabled={disableInputs || isNotAppendable}
-                  isSubmitting={isSubmitting}
-                />
-              )}
-              <div className={`${isRTL ? 'ml-2' : 'mr-2'}`}>
-                {isSubmitting && showStopButton ? (
-                  <StopButton stop={handleStopGenerating} setShowStopButton={setShowStopButton} />
-                ) : (
-                  endpoint && (
+                )}
+                <div className={`flex-shrink-0 ${isRTL ? 'ml-1' : 'mr-1'}`}>
+                  {isSubmitting && showStopButton ? (
+                    <StopButton stop={handleStopGenerating} setShowStopButton={setShowStopButton} />
+                  ) : (
                     <SendButton
                       ref={submitButtonRef}
                       control={methods.control}
                       disabled={filesLoading || isSubmitting || disableInputs || isNotAppendable}
                     />
-                  )
-                )}
+                  )}
+                </div>
               </div>
-            </div>
+            )}
             {TextToSpeech && automaticPlayback && <StreamAudio index={index} />}
           </div>
         </div>

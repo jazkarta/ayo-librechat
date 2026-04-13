@@ -80,7 +80,8 @@ function Footer({ className }: { className?: string }) {
         }
         role="contentinfo"
       >
-        {footerElements.map((contentRender, index) => {
+        {/* @TODO: hide the footer text for now. */}
+        {/* {footerElements.map((contentRender, index) => {
           const isLastElement = index === footerElements.length - 1;
           return (
             <React.Fragment key={`footer-element-${index}`}>
@@ -93,7 +94,7 @@ function Footer({ className }: { className?: string }) {
               )}
             </React.Fragment>
           );
-        })}
+        })} */}
       </div>
     </div>
   );
