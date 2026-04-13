@@ -163,8 +163,8 @@ const ChatForm = memo(function ChatForm({
         setPlusMenuOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, [plusMenuOpen]);
 
   const { submitMessage, submitPrompt } = useSubmitMessage();
