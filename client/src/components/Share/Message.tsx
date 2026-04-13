@@ -1,11 +1,9 @@
-import { useAtomValue } from 'jotai';
 import type { TMessageProps } from '~/common';
 import MinimalHoverButtons from '~/components/Chat/Messages/MinimalHoverButtons';
 import MessageContent from '~/components/Chat/Messages/Content/MessageContent';
 import SearchContent from '~/components/Chat/Messages/Content/SearchContent';
 import SiblingSwitch from '~/components/Chat/Messages/SiblingSwitch';
 import SubRow from '~/components/Chat/Messages/SubRow';
-import { fontSizeAtom } from '~/store/fontSize';
 import { MessageContext } from '~/Providers';
 import { useAttachments } from '~/hooks';
 
@@ -14,7 +12,6 @@ import { cn } from '~/utils';
 
 import Icon from './MessageIcon';
 export default function Message(props: TMessageProps) {
-  const fontSize = useAtomValue(fontSizeAtom);
   const {
     message,
     siblingIdx,
@@ -54,20 +51,27 @@ export default function Message(props: TMessageProps) {
     <>
       <div className="text-token-text-primary w-full border-0 bg-transparent dark:border-0 dark:bg-transparent">
         <div className="m-auto justify-center p-4 py-2 md:gap-6">
-          <div className="final-completion group mx-auto flex flex-1 gap-3 md:max-w-[42.5rem] md:px-5 lg:px-1 xl:max-w-[42.5rem] xl:px-5">
-            <div className="relative flex flex-shrink-0 flex-col items-end">
-              <div>
-                <div className="pt-0.5">
-                  <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
-                    <Icon message={message} conversation={conversation} />
+          <div className={cn('final-completion group mx-auto flex flex-1 gap-3 md:max-w-[42.5rem] md:px-5 lg:px-1 xl:max-w-[42.5rem] xl:px-5', isCreatedByUser && 'justify-end')}>
+            {!isCreatedByUser && (
+              <div className="relative flex flex-shrink-0 flex-col items-end">
+                <div>
+                  <div className="pt-0.5">
+                    <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
+                      <Icon message={message} conversation={conversation} />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
             <div
-              className={cn('relative flex w-11/12 flex-col', isCreatedByUser ? '' : 'agent-turn')}
+              className={cn(
+                'relative flex flex-col',
+                isCreatedByUser
+                  ? 'max-w-[55%] rounded-2xl bg-surface-tertiary px-4 py-2 user-turn'
+                  : 'w-11/12 agent-turn',
+              )}
             >
-              <div className={cn('select-none font-semibold', fontSize)}>{messageLabel}</div>
+              <h2 className="sr-only">{messageLabel}</h2>
               <div className="flex-col gap-1 md:gap-3">
                 <div className="flex min-h-[20px] max-w-full flex-grow flex-col gap-0">
                   <MessageContext.Provider
