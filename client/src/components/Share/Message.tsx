@@ -54,7 +54,7 @@ export default function Message(props: TMessageProps) {
     <>
       <div className="text-token-text-primary w-full border-0 bg-transparent dark:border-0 dark:bg-transparent">
         <div className="m-auto justify-center p-4 py-2 md:gap-6">
-          <div className="final-completion group mx-auto flex flex-1 gap-3 md:max-w-[47rem] md:px-5 lg:px-1 xl:max-w-[55rem] xl:px-5">
+          <div className="final-completion group mx-auto flex flex-1 gap-3 md:max-w-[42.5rem] md:px-5 lg:px-1 xl:max-w-[42.5rem] xl:px-5">
             <div className="relative flex flex-shrink-0 flex-col items-end">
               <div>
                 <div className="pt-0.5">
