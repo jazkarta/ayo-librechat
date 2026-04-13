@@ -107,9 +107,14 @@ export default function Message(props: TMessageProps) {
           <div
             id={messageId ?? ''}
             aria-label={getMessageAriaLabel(message, localize)}
-            className={cn(baseClasses.common, baseClasses.chat, 'message-render')}
+            className={cn(
+              baseClasses.common,
+              baseClasses.chat,
+              'message-render',
+              isCreatedByUser && !hasParallelContent && 'justify-end',
+            )}
           >
-            {!hasParallelContent && (
+            {!hasParallelContent && !isCreatedByUser && (
               <div className="relative flex flex-shrink-0 flex-col items-center">
                 <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full pt-0.5">
                   <MessageIcon iconData={iconData} assistant={assistant} agent={agent} />
@@ -118,62 +123,64 @@ export default function Message(props: TMessageProps) {
             )}
             <div
               className={cn(
-                'relative flex flex-col',
-                hasParallelContent ? 'w-full' : 'w-11/12',
-                isCreatedByUser ? 'user-turn' : 'agent-turn',
+                'relative flex flex-col gap-1',
+                isCreatedByUser
+                  ? cn('user-turn', edit ? 'w-full' : 'items-end')
+                  : cn(hasParallelContent ? 'w-full' : 'w-11/12', 'agent-turn'),
               )}
             >
               {!hasParallelContent && (
-                <h2 className={cn('select-none font-semibold text-text-primary', fontSize)}>
-                  <span className="sr-only">
-                    {getHeaderPrefixForScreenReader(message, localize)}
-                  </span>
+                <h2 className="sr-only">
+                  {getHeaderPrefixForScreenReader(message, localize)}
                   {name}
                 </h2>
               )}
-              <div className="flex flex-col gap-1">
-                <div className="flex min-h-[20px] max-w-full flex-grow flex-col gap-0">
-                  <ContentParts
-                    edit={edit}
-                    isLast={isLast}
-                    enterEdit={enterEdit}
-                    siblingIdx={siblingIdx}
-                    attachments={attachments}
-                    isSubmitting={isSubmitting}
-                    searchResults={searchResults}
-                    messageId={message.messageId}
-                    setSiblingIdx={setSiblingIdx}
-                    isCreatedByUser={message.isCreatedByUser}
-                    conversationId={conversation?.conversationId}
-                    isLatestMessage={messageId === latestMessageId}
-                    content={message.content as Array<TMessageContentParts | undefined>}
-                  />
-                </div>
-                {isLast && isSubmitting ? (
-                  <div className="mt-1 h-[31px] bg-transparent" />
-                ) : (
-                  <SubRow classes="text-xs">
-                    <SiblingSwitch
-                      siblingIdx={siblingIdx}
-                      siblingCount={siblingCount}
-                      setSiblingIdx={setSiblingIdx}
-                    />
-                    <HoverButtons
-                      index={index}
-                      isEditing={edit}
-                      message={message}
-                      enterEdit={enterEdit}
-                      isSubmitting={isSubmitting}
-                      conversation={conversation ?? null}
-                      regenerate={() => regenerateMessage()}
-                      copyToClipboard={copyToClipboard}
-                      handleContinue={handleContinue}
-                      latestMessageId={latestMessageId}
-                      isLast={isLast}
-                    />
-                  </SubRow>
+              <div
+                className={cn(
+                  'flex min-h-[20px] max-w-full flex-grow flex-col gap-0',
+                  isCreatedByUser && !edit && 'max-w-[55%] rounded-2xl bg-surface-tertiary px-4 py-2',
                 )}
+              >
+                <ContentParts
+                  edit={edit}
+                  isLast={isLast}
+                  enterEdit={enterEdit}
+                  siblingIdx={siblingIdx}
+                  attachments={attachments}
+                  isSubmitting={isSubmitting}
+                  searchResults={searchResults}
+                  messageId={message.messageId}
+                  setSiblingIdx={setSiblingIdx}
+                  isCreatedByUser={message.isCreatedByUser}
+                  conversationId={conversation?.conversationId}
+                  isLatestMessage={messageId === latestMessageId}
+                  content={message.content as Array<TMessageContentParts | undefined>}
+                />
               </div>
+              {isLast && isSubmitting ? (
+                <div className="mt-1 h-[31px] bg-transparent" />
+              ) : (
+                <SubRow classes="text-xs">
+                  <SiblingSwitch
+                    siblingIdx={siblingIdx}
+                    siblingCount={siblingCount}
+                    setSiblingIdx={setSiblingIdx}
+                  />
+                  <HoverButtons
+                    index={index}
+                    isEditing={edit}
+                    message={message}
+                    enterEdit={enterEdit}
+                    isSubmitting={isSubmitting}
+                    conversation={conversation ?? null}
+                    regenerate={() => regenerateMessage()}
+                    copyToClipboard={copyToClipboard}
+                    handleContinue={handleContinue}
+                    latestMessageId={latestMessageId}
+                    isLast={isLast}
+                  />
+                </SubRow>
+              )}
             </div>
           </div>
         </div>

@@ -191,9 +191,10 @@ const MessageRender = memo(function MessageRender({
         baseClasses.chat,
         conditionalClasses.focus,
         'message-render',
+        msg.isCreatedByUser && !hasParallelContent && 'justify-end',
       )}
     >
-      {!hasParallelContent && (
+      {!hasParallelContent && !msg.isCreatedByUser && (
         <div className="relative flex flex-shrink-0 flex-col items-center">
           <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
             <MessageIcon iconData={iconData} assistant={assistant} agent={agent} />
@@ -203,63 +204,67 @@ const MessageRender = memo(function MessageRender({
 
       <div
         className={cn(
-          'relative flex flex-col',
-          hasParallelContent ? 'w-full' : 'w-11/12',
-          msg.isCreatedByUser ? 'user-turn' : 'agent-turn',
+          'relative flex flex-col gap-1',
+          msg.isCreatedByUser
+            ? cn('user-turn', edit ? 'w-full' : 'items-end')
+            : cn(hasParallelContent ? 'w-full' : 'w-11/12', 'agent-turn'),
         )}
       >
         {!hasParallelContent && (
-          <h2 className={cn('select-none font-semibold', fontSize)}>
-            <span className="sr-only">{getHeaderPrefixForScreenReader(msg, localize)}</span>
+          <h2 className="sr-only">
+            {getHeaderPrefixForScreenReader(msg, localize)}
             {messageLabel}
           </h2>
         )}
 
-        <div className="flex flex-col gap-1">
-          <div className="flex min-h-[20px] max-w-full flex-grow flex-col gap-0">
-            <MessageContext.Provider value={messageContextValue}>
-              <MessageContent
-                ask={ask}
-                edit={edit}
-                isLast={isLast}
-                text={msg.text || ''}
-                message={msg}
-                enterEdit={enterEdit}
-                error={!!(msg.error ?? false)}
-                isSubmitting={isSubmitting}
-                unfinished={msg.unfinished ?? false}
-                isCreatedByUser={msg.isCreatedByUser ?? true}
-                siblingIdx={siblingIdx ?? 0}
-                setSiblingIdx={setSiblingIdx ?? (() => ({}))}
-              />
-            </MessageContext.Provider>
-          </div>
-          {hasNoChildren && isSubmitting ? (
-            <PlaceholderRow />
-          ) : (
-            <SubRow classes="text-xs">
-              <SiblingSwitch
-                siblingIdx={siblingIdx}
-                siblingCount={siblingCount}
-                setSiblingIdx={setSiblingIdx}
-              />
-              <HoverButtons
-                index={index}
-                isEditing={edit}
-                message={msg}
-                enterEdit={enterEdit}
-                isSubmitting={chatContext.isSubmitting}
-                conversation={conversation ?? null}
-                regenerate={handleRegenerateMessage}
-                copyToClipboard={copyToClipboard}
-                handleContinue={handleContinue}
-                latestMessageId={latestMessageId}
-                handleFeedback={handleFeedback}
-                isLast={isLast}
-              />
-            </SubRow>
+        <div
+          className={cn(
+            'flex min-h-[20px] max-w-full flex-grow flex-col gap-0',
+            msg.isCreatedByUser && !edit && 'max-w-[55%] rounded-2xl bg-surface-tertiary px-4 py-2',
           )}
+        >
+          <MessageContext.Provider value={messageContextValue}>
+            <MessageContent
+              ask={ask}
+              edit={edit}
+              isLast={isLast}
+              text={msg.text || ''}
+              message={msg}
+              enterEdit={enterEdit}
+              error={!!(msg.error ?? false)}
+              isSubmitting={isSubmitting}
+              unfinished={msg.unfinished ?? false}
+              isCreatedByUser={msg.isCreatedByUser ?? true}
+              siblingIdx={siblingIdx ?? 0}
+              setSiblingIdx={setSiblingIdx ?? (() => ({}))}
+            />
+          </MessageContext.Provider>
         </div>
+        {hasNoChildren && isSubmitting ? (
+          <PlaceholderRow />
+        ) : (
+          <SubRow classes="text-xs">
+            <SiblingSwitch
+              siblingIdx={siblingIdx}
+              siblingCount={siblingCount}
+              setSiblingIdx={setSiblingIdx}
+            />
+            <HoverButtons
+              index={index}
+              isEditing={edit}
+              message={msg}
+              enterEdit={enterEdit}
+              isSubmitting={chatContext.isSubmitting}
+              conversation={conversation ?? null}
+              regenerate={handleRegenerateMessage}
+              copyToClipboard={copyToClipboard}
+              handleContinue={handleContinue}
+              latestMessageId={latestMessageId}
+              handleFeedback={handleFeedback}
+              isLast={isLast}
+            />
+          </SubRow>
+        )}
       </div>
     </div>
   );
