@@ -99,7 +99,7 @@ export default function Landing({ centerFormOnLanding }: { centerFormOnLanding: 
     else {
       return localize('com_ui_good_evening');
     }
-  }, [localize, startupConfig?.interface?.customWelcome, user?.name]);
+  }, [localize, startupConfig?.interface?.customWelcome, user?.username]);
 
   const handleLineCountChange = useCallback((count: number) => {
     setTextHasMultipleLines(count > 1);
@@ -135,7 +135,7 @@ export default function Landing({ centerFormOnLanding }: { centerFormOnLanding: 
   const greetingText =
     typeof startupConfig?.interface?.customWelcome === 'string'
       ? getGreeting()
-      : getGreeting() + (user?.name ? ', ' + user.name.split(' ')[0] : '');
+      : getGreeting() + (user?.username ? ', ' + user.username : '');
 
   return (
     <div
@@ -184,7 +184,7 @@ export default function Landing({ centerFormOnLanding }: { centerFormOnLanding: 
             </div>
           ) : (
             <SplitText
-              key={`split-text-${greetingText}${user?.name ? '-user' : ''}`}
+              key={`split-text-${greetingText}${user?.username ? '-user' : ''}`}
               text={greetingText}
               className="text-[28px] leading-[34px] font-normal text-text-primary"
               delay={0}

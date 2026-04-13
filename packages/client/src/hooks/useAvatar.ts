@@ -8,7 +8,7 @@ const avatarCache: Record<string, string> = {};
 const useAvatar = (user: TUser | undefined) => {
   return useMemo(() => {
     const { username, name } = user ?? {};
-    const seed = name || username;
+    const seed = username || name;
     if (!seed) {
       return '';
     }
