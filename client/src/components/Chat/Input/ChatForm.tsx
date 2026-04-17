@@ -320,31 +320,34 @@ const ChatForm = memo(function ChatForm({
                       </button>
                     }
                   />
-                  {plusMenuOpen && (
-                    <div className="absolute bottom-full left-0 mb-2 flex flex-col gap-1 rounded-xl border border-border-light bg-surface-primary p-1.5 shadow-lg">
-                      <AttachFileChat
-                        conversation={conversation}
-                        disableInputs={disableInputs}
-                        files={files}
-                        setFiles={setFiles}
-                        setFilesLoading={setFilesLoading}
-                      />
-                      <BadgeRow
-                        showEphemeralBadges={
-                          !!endpoint &&
-                          !isAgentsEndpoint(endpoint) &&
-                          !isAssistantsEndpoint(endpoint)
-                        }
-                        isSubmitting={isSubmitting}
-                        conversationId={conversationId}
-                        specName={conversation?.spec}
-                        onChange={setBadges}
-                        isInChat={
-                          Array.isArray(conversation?.messages) && conversation.messages.length >= 1
-                        }
-                      />
-                    </div>
-                  )}
+                  <div
+                    className={cn(
+                      'absolute bottom-full left-0 mb-2 flex flex-col gap-1 rounded-xl border border-border-light bg-surface-primary p-1.5 shadow-lg',
+                      !plusMenuOpen && 'hidden',
+                    )}
+                  >
+                    <AttachFileChat
+                      conversation={conversation}
+                      disableInputs={disableInputs}
+                      files={files}
+                      setFiles={setFiles}
+                      setFilesLoading={setFilesLoading}
+                    />
+                    <BadgeRow
+                      showEphemeralBadges={
+                        !!endpoint &&
+                        !isAgentsEndpoint(endpoint) &&
+                        !isAssistantsEndpoint(endpoint)
+                      }
+                      isSubmitting={isSubmitting}
+                      conversationId={conversationId}
+                      specName={conversation?.spec}
+                      onChange={setBadges}
+                      isInChat={
+                        Array.isArray(conversation?.messages) && conversation.messages.length >= 1
+                      }
+                    />
+                  </div>
                 </div>
                 <div
                   className="relative flex-1"

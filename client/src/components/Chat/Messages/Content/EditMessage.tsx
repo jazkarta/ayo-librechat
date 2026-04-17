@@ -179,11 +179,11 @@ const EditMessage = ({
               disabled={isSubmitting}
               onClick={handleSubmit(resubmitMessage)}
             >
-              {localize('com_ui_save_submit')}
+              {localize('com_ui_submit')}
             </button>
           }
         />
-        <TooltipAnchor
+        {/* <TooltipAnchor
           description="Shift + Enter"
           render={
             <button
@@ -195,7 +195,7 @@ const EditMessage = ({
               {localize('com_ui_save')}
             </button>
           }
-        />
+        /> */}
         <TooltipAnchor
           description="Esc"
           render={
