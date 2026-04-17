@@ -179,7 +179,7 @@ const EditMessage = ({
               disabled={isSubmitting}
               onClick={handleSubmit(resubmitMessage)}
             >
-              {localize('com_ui_save_submit')}
+              {localize('com_ui_submit')}
             </button>
           }
         />
