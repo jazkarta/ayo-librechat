@@ -183,7 +183,7 @@ const EditMessage = ({
             </button>
           }
         />
-        <TooltipAnchor
+        {/* <TooltipAnchor
           description="Shift + Enter"
           render={
             <button
@@ -195,7 +195,7 @@ const EditMessage = ({
               {localize('com_ui_save')}
             </button>
           }
-        />
+        /> */}
         <TooltipAnchor
           description="Esc"
           render={

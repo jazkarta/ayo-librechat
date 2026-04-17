@@ -220,7 +220,7 @@ const HoverButtons = ({
       />
 
       {/* Edit Button */}
-      {isEditableEndpoint && (
+      {isEditableEndpoint && isCreatedByUser && (
         <HoverButton
           id={`edit-${message.messageId}`}
           onClick={onEdit}
@@ -230,7 +230,6 @@ const HoverButtons = ({
           isVisible={!hideEditButton}
           isDisabled={hideEditButton}
           isLast={isLast}
-          className={isCreatedByUser ? '' : 'active'}
         />
       )}
 

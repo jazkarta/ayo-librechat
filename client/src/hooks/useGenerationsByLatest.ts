@@ -63,7 +63,7 @@ export default function useGenerationsByLatest({
     error ||
     searchResult ||
     !branchingSupported ||
-    (!isEditableEndpoint && !isCreatedByUser);
+    !isCreatedByUser;
 
   const forkingSupported = !isAssistantsEndpoint(endpoint) && !searchResult;
 
