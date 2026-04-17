@@ -275,6 +275,7 @@ const AttachFileMenu = ({
       id="attach-file-menu-button"
       description={localize('com_sidepanel_attach_files')}
       disabled={isUploadDisabled}
+      side="right"
     />
   );
   const handleSharePointFilesSelected = async (sharePointFiles: any[]) => {

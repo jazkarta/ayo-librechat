@@ -323,6 +323,7 @@ const ToolsDropdown = ({ disabled }: ToolsDropdownProps) => {
       id="tools-dropdown-button"
       description={localize('com_ui_tools')}
       disabled={isDisabled}
+      side="right"
     />
   );
 
