@@ -6,7 +6,7 @@ const Container = ({ children, message }: { children: React.ReactNode; message?:
     className="text-message flex min-h-[20px] flex-col items-start gap-3 overflow-visible [.text-message+&]:mt-5"
     dir="auto"
   >
-    {message?.isCreatedByUser === true && <Files message={message} />}
+    {message?.isCreatedByUser === true && <Files message={message} mode="images-only" />}
     {children}
   </div>
 );

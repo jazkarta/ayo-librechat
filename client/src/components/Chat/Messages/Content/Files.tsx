@@ -4,14 +4,22 @@ import FileContainer from '~/components/Chat/Input/Files/FileContainer';
 import FilePreviewDialog from './FilePreviewDialog';
 import Image from './Image';
 
-const Files = ({ message }: { message?: TMessage }) => {
+const Files = ({
+  message,
+  mode = 'all',
+}: {
+  message?: TMessage;
+  mode?: 'all' | 'images-only' | 'documents-only';
+}) => {
   const imageFiles = useMemo(() => {
+    if (mode === 'documents-only') return [];
     return message?.files?.filter((file) => file.type?.startsWith('image/')) || [];
-  }, [message?.files]);
+  }, [message?.files, mode]);
 
   const otherFiles = useMemo(() => {
+    if (mode === 'images-only') return [];
     return message?.files?.filter((file) => !file.type?.startsWith('image/')) || [];
-  }, [message?.files]);
+  }, [message?.files, mode]);
 
   const [selectedFile, setSelectedFile] = useState<Partial<TFile> | null>(null);
 

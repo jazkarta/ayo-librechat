@@ -4,6 +4,7 @@ import { useRecoilValue } from 'recoil';
 import type { TMessage } from 'librechat-data-provider';
 import type { TMessageProps, TMessageIcon, TMessageChatContext } from '~/common';
 import { cn, getHeaderPrefixForScreenReader, getMessageAriaLabel } from '~/utils';
+import Files from '~/components/Chat/Messages/Content/Files';
 import MessageContent from '~/components/Chat/Messages/Content/MessageContent';
 import { useLocalize, useMessageActions, useContentMetadata } from '~/hooks';
 import PlaceholderRow from '~/components/Chat/Messages/ui/PlaceholderRow';
@@ -217,6 +218,9 @@ const MessageRender = memo(function MessageRender({
           </h2>
         )}
 
+        {msg.isCreatedByUser && !edit && (
+          <Files message={msg} mode="documents-only" />
+        )}
         <div
           className={cn(
             'flex min-h-[20px] max-w-full flex-grow flex-col gap-0',
