@@ -79,7 +79,12 @@ export async function saveBufferToS3({
   basePath = defaultBasePath,
 }: SaveBufferParams): Promise<string> {
   const key = getS3Key(basePath, userId, fileName);
-  const params = { Bucket: bucketName, Key: key, Body: buffer };
+  const params = {
+    Bucket: bucketName,
+    Key: key,
+    Body: buffer,
+    ContentLength: buffer.length,
+  };
 
   try {
     const s3 = initializeS3();
@@ -260,7 +265,7 @@ export async function uploadFileToS3({
 
     const stats = await fs.promises.stat(inputFilePath);
     const bytes = stats.size;
-    const fileStream = fs.createReadStream(inputFilePath);
+    const buffer = await fs.promises.readFile(inputFilePath);
 
     const s3 = initializeS3();
     if (!s3) {
@@ -270,15 +275,13 @@ export async function uploadFileToS3({
     const uploadParams = {
       Bucket: bucketName,
       Key: key,
-      Body: fileStream,
+      Body: buffer,
+      ContentType: file.mimetype,
+      ContentLength: bytes,
     };
 
     await s3.send(new PutObjectCommand(uploadParams));
     const fileURL = await getS3URL({ userId, fileName, basePath });
-    // NOTE: temp file is intentionally NOT deleted on the success path.
-    // The caller (processAgentFileUpload) reads file.path after this returns
-    // to stream the file to the RAG vector embedding service (POST /embed).
-    // Temp file lifecycle on success is the caller's responsibility.
     return { filepath: fileURL, bytes };
   } catch (error) {
     logger.error('[uploadFileToS3] Error streaming file to S3:', error);
