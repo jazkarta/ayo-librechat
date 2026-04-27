@@ -123,7 +123,7 @@ const refreshController = async (req, res) => {
       return res.status(200).send({ token, user: safeUser });
     } catch (error) {
       logger.error('[refreshController] OpenID token refresh error', error);
-      return res.status(403).send('Invalid OpenID refresh token');
+      return res.status(403).redirect('/login');
     }
   }
 
