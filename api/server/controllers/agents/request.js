@@ -13,6 +13,7 @@ const { disposeClient, clientRegistry, requestDataMap } = require('~/server/clea
 const { handleAbortError } = require('~/server/middleware');
 const { logViolation } = require('~/cache');
 const { saveMessage } = require('~/models');
+const { syncChatToAyo } = require('~/server/services/ayoDashboard');
 
 function createCloseHandler(abortController) {
   return function (manual) {
@@ -298,6 +299,22 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
             { ...response, user: userId, unfinished: wasAbortedBeforeComplete },
             { context: 'api/server/controllers/agents/request.js - resumable response end' },
           );
+        }
+
+        const responseText = response?.text ||
+          (Array.isArray(response?.content)
+            ? response.content.filter((b) => b.type === 'text').map((b) => b.text).join('')
+            : '');
+        if (!wasAbortedBeforeComplete && responseText) {
+          syncChatToAyo({
+            accessToken: req.user?.federatedTokens?.access_token,
+            conversationId: conversation.conversationId,
+            userEmail: req.user?.email,
+            modelName: conversation.model,
+            prompt: userMessage?.text ?? '',
+            response: responseText,
+            isNewConvo,
+          }).catch((err) => logger.error('[ayoDashboard] syncChatToAyo error', err));
         }
 
         // Check if our job was replaced by a new request before emitting
