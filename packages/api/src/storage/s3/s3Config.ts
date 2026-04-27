@@ -2,7 +2,7 @@ import { logger } from '@librechat/data-schemas';
 import { isEnabled } from '~/utils/common';
 
 const MAX_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 days
-const DEFAULT_EXPIRY_SECONDS = 2 * 60; // 2 minutes
+const DEFAULT_EXPIRY_SECONDS = 3600; // 1 hour
 const DEFAULT_BASE_PATH = 'images';
 
 const parseUrlExpiry = (): number => {
@@ -52,6 +52,8 @@ export const s3Config = {
   S3_URL_EXPIRY_SECONDS: parseUrlExpiry(),
   /** Custom refresh expiry in milliseconds (null = use default buffer logic) */
   S3_REFRESH_EXPIRY_MS: parseRefreshExpiry(),
+  /** Whether to use public URLs for S3 objects instead of signed URLs */
+  S3_USE_PUBLIC_URLS: isEnabled(process.env.S3_USE_PUBLIC_URLS),
   /** Default base path for file storage */
   DEFAULT_BASE_PATH,
 };

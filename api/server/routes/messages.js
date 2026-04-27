@@ -2,13 +2,57 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { logger } = require('@librechat/data-schemas');
 const { ContentTypes } = require('librechat-data-provider');
-const { unescapeLaTeX, countTokens } = require('@librechat/api');
+const { unescapeLaTeX, countTokens, needsRefresh, getNewS3URL } = require('@librechat/api');
 const { findAllArtifacts, replaceArtifactContent } = require('~/server/services/Artifacts/update');
 const { requireJwtAuth, validateMessageReq } = require('~/server/middleware');
 const db = require('~/models');
 
 const router = express.Router();
 router.use(requireJwtAuth);
+
+/**
+ * Recursively traverses a message object (or array) and dynamically refreshes
+ * expired S3 URLs in memory before sending them to the client.
+ */
+async function refreshMessageS3Urls(data) {
+  if (!data) return data;
+  
+  let parsedData;
+  try {
+    parsedData = JSON.parse(JSON.stringify(data));
+  } catch (e) {
+    parsedData = data;
+  }
+
+  const trav = require('traverse');
+  const items = [];
+  
+  trav(parsedData).forEach(function (val) {
+    if (typeof val === 'string' && val.includes('X-Amz-Signature')) {
+      items.push({ path: this.path, url: val });
+    }
+  });
+
+  if (items.length === 0) {
+    return parsedData;
+  }
+
+  const promises = items.map(async ({ path, url }) => {
+    if (needsRefresh(url, 3600)) {
+      try {
+        const newUrl = await getNewS3URL(url);
+        if (newUrl) {
+          trav(parsedData).set(path, newUrl);
+        }
+      } catch (err) {
+        logger.error(`[refreshMessageS3Urls] Error refreshing S3 URL at path ${path.join('.')}:`, err);
+      }
+    }
+  });
+
+  await Promise.all(promises);
+  return parsedData;
+}
 
 router.get('/', async (req, res) => {
   try {
@@ -86,7 +130,8 @@ router.get('/', async (req, res) => {
       response = { messages: [], nextCursor: null };
     }
 
-    res.status(200).json(response);
+    const refreshedMessages = await refreshMessageS3Urls(response.messages);
+    res.status(200).json({ ...response, messages: refreshedMessages });
   } catch (error) {
     logger.error('Error fetching messages:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -270,7 +315,8 @@ router.get('/:conversationId', validateMessageReq, async (req, res) => {
   try {
     const { conversationId } = req.params;
     const messages = await db.getMessages({ conversationId }, '-_id -__v -user');
-    res.status(200).json(messages);
+    const refreshedMessages = await refreshMessageS3Urls(messages);
+    res.status(200).json(refreshedMessages);
   } catch (error) {
     logger.error('Error fetching messages:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -308,7 +354,8 @@ router.get('/:conversationId/:messageId', validateMessageReq, async (req, res) =
     if (!message) {
       return res.status(404).json({ error: 'Message not found' });
     }
-    res.status(200).json(message);
+    const refreshedMessage = await refreshMessageS3Urls(message);
+    res.status(200).json(refreshedMessage);
   } catch (error) {
     logger.error('Error fetching message:', error);
     res.status(500).json({ error: 'Internal server error' });

@@ -31,6 +31,7 @@ const {
   AWS_FORCE_PATH_STYLE: forcePathStyle,
   S3_URL_EXPIRY_SECONDS: s3UrlExpirySeconds,
   S3_REFRESH_EXPIRY_MS: s3RefreshExpiryMs,
+  S3_USE_PUBLIC_URLS: usePublicUrls,
   DEFAULT_BASE_PATH: defaultBasePath,
 } = s3Config;
 
@@ -58,6 +59,11 @@ export async function getS3URL({
   if (contentType) {
     params.ResponseContentType = contentType;
   }
+  
+  if (usePublicUrls && endpoint) {
+    const baseUrl = endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint;
+    return `${baseUrl}/${bucketName}/${key}`;
+  }
 
   try {
     const s3 = initializeS3();
@@ -68,6 +74,32 @@ export async function getS3URL({
     return await getSignedUrl(s3, new GetObjectCommand(params), { expiresIn: s3UrlExpirySeconds });
   } catch (error) {
     logger.error('[getS3URL] Error getting signed URL from S3:', (error as Error).message);
+    throw error;
+  }
+}
+
+/**
+ * Gets a fresh signed URL for a given S3 key.
+ * @param {string} key - The S3 key to sign.
+ * @returns {Promise<string>} The fresh signed URL.
+ */
+export async function getS3URLByKey(key: string): Promise<string> {
+  if (usePublicUrls && endpoint) {
+    const baseUrl = endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint;
+    return `${baseUrl}/${bucketName}/${key}`;
+  }
+
+  const params: GetObjectCommandInput = { Bucket: bucketName, Key: key };
+
+  try {
+    const s3 = initializeS3();
+    if (!s3) {
+      throw new Error('[getS3URLByKey] S3 not initialized');
+    }
+
+    return await getSignedUrl(s3, new GetObjectCommand(params), { expiresIn: s3UrlExpirySeconds });
+  } catch (error) {
+    logger.error('[getS3URLByKey] Error getting signed URL from S3:', (error as Error).message);
     throw error;
   }
 }
@@ -130,50 +162,36 @@ export function extractKeyFromS3Url(fileUrlOrKey: string): string {
     const hostname = url.hostname;
     const pathname = url.pathname.substring(1);
 
-    if (endpoint && forcePathStyle) {
-      const endpointUrl = new URL(endpoint);
-      const startPos =
-        endpointUrl.pathname.length +
-        (endpointUrl.pathname.endsWith('/') ? 0 : 1) +
-        bucketName.length +
-        1;
-      const key = url.pathname.substring(startPos);
-      if (!key) {
-        logger.warn(
-          `[extractKeyFromS3Url] Extracted key is empty for endpoint path-style URL: ${fileUrlOrKey}`,
-        );
-      } else {
-        logger.debug(`[extractKeyFromS3Url] fileUrlOrKey: ${fileUrlOrKey}, Extracted key: ${key}`);
-      }
+    // 1. Check if the bucket name is in the hostname (Virtual-host style)
+    if (bucketName && hostname.startsWith(`${bucketName}.`)) {
+      logger.debug(`[extractKeyFromS3Url] Virtual-host style detected. Key: ${pathname}`);
+      return pathname;
+    }
+
+    // 2. Check if the bucket name is the first part of the path (Path-style)
+    if (bucketName && pathname.startsWith(`${bucketName}/`)) {
+      const key = pathname.substring(bucketName.length + 1);
+      logger.debug(`[extractKeyFromS3Url] Path-style detected. Key: ${key}`);
       return key;
     }
 
-    if (
-      hostname === 's3.amazonaws.com' ||
-      hostname.match(/^s3[-.][a-z0-9-]+\.amazonaws\.com$/) ||
-      (bucketName && pathname.startsWith(`${bucketName}/`))
-    ) {
-      const firstSlashIndex = pathname.indexOf('/');
-      if (firstSlashIndex > 0) {
-        const key = pathname.substring(firstSlashIndex + 1);
-        if (key === '') {
-          logger.warn(
-            `[extractKeyFromS3Url] Extracted key is empty after removing bucket name from URL: ${fileUrlOrKey}`,
-          );
-        } else {
-          logger.debug(
-            `[extractKeyFromS3Url] fileUrlOrKey: ${fileUrlOrKey}, Extracted key: ${key}`,
-          );
+    // 3. Fallback for custom endpoints or other S3-compatible services
+    if (endpoint && forcePathStyle) {
+      try {
+        const endpointUrl = new URL(endpoint);
+        const prefix = endpointUrl.pathname.endsWith('/')
+          ? endpointUrl.pathname
+          : `${endpointUrl.pathname}/`;
+        if (url.pathname.startsWith(`${prefix}${bucketName}/`)) {
+          const key = url.pathname.substring(`${prefix}${bucketName}/`.length);
+          return key;
         }
-        return key;
+      } catch (e) {
+        // ignore parsing error
       }
-      logger.warn(
-        `[extractKeyFromS3Url] Unable to extract key from path-style URL: ${fileUrlOrKey}`,
-      );
-      return '';
     }
 
-    logger.debug(`[extractKeyFromS3Url] fileUrlOrKey: ${fileUrlOrKey}, Extracted key: ${pathname}`);
+    logger.debug(`[extractKeyFromS3Url] Defaulting to pathname. Key: ${pathname}`);
     return pathname;
   } catch (error) {
     if (fileUrlOrKey.startsWith('http://') || fileUrlOrKey.startsWith('https://')) {
@@ -325,6 +343,10 @@ export function needsRefresh(signedUrl: string, bufferSeconds: number): boolean 
       return false;
     }
 
+    if (usePublicUrls) {
+      return true;
+    }
+
     const expiresParam = url.searchParams.get('X-Amz-Expires');
     const dateParam = url.searchParams.get('X-Amz-Date');
 
@@ -363,18 +385,10 @@ export async function getNewS3URL(currentURL: string): Promise<string | undefine
       return;
     }
 
-    const keyParts = s3Key.split('/');
-    if (keyParts.length < 3) {
-      return;
-    }
-
-    const basePath = keyParts[0];
-    const userId = keyParts[1];
-    const fileName = keyParts.slice(2).join('/');
-
-    return getS3URL({ userId, fileName, basePath });
+    return getS3URLByKey(s3Key);
   } catch (error) {
-    logger.error('Error getting new S3 URL:', error);
+    logger.error('[getNewS3URL] Error getting fresh S3 URL:', (error as Error).message);
+    return undefined;
   }
 }
 
@@ -401,13 +415,39 @@ export async function refreshS3FileUrls(
     if (!file.filepath) {
       continue;
     }
-    if (!needsRefresh(file.filepath, bufferSeconds)) {
-      continue;
-    }
 
     try {
-      const newURL = await getNewS3URL(file.filepath);
-      if (!newURL) {
+      let s3Key = extractKeyFromS3Url(file.filepath);
+      
+      // 1. SELF-HEALING: Detect and fix corrupted or truncated paths
+      const expectedPrefix = `images/${file.user}/`;
+      const fileId = file.file_id;
+      const isCorrupted = s3Key && (!s3Key.startsWith(expectedPrefix) || s3Key.includes(`/${file.user}/${file.user.substring(9)}/`));
+
+      if (isCorrupted) {
+        const fileIdIndex = s3Key.indexOf(fileId);
+        if (fileIdIndex !== -1) {
+          const partFromFileId = s3Key.substring(fileIdIndex);
+          const correctedKey = `${expectedPrefix}${partFromFileId}`;
+          logger.info(`[HEALER] Repairing path for file ${fileId}. Old: ${s3Key}, New: ${correctedKey}`);
+          s3Key = correctedKey;
+        } else {
+          logger.warn(`[HEALER] Could not find fileId ${fileId} in s3Key ${s3Key}. Skipping repair.`);
+        }
+      }
+
+      // 2. Skip if it's already a healthy Public URL
+      if (usePublicUrls && file.filepath.includes(bucketName) && !file.filepath.includes('X-Amz-Signature') && !isCorrupted) {
+        continue;
+      }
+
+      // 3. Skip if it's a healthy signed URL that doesn't need refresh yet
+      if (!isCorrupted && !needsRefresh(file.filepath, bufferSeconds)) {
+        continue;
+      }
+
+      const newURL = await getS3URLByKey(s3Key);
+      if (!newURL || newURL === file.filepath) {
         continue;
       }
       filesToUpdate.push({
