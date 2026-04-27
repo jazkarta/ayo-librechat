@@ -3,6 +3,7 @@ const { logger } = require('@librechat/data-schemas');
 const { CacheKeys } = require('librechat-data-provider');
 const getLogStores = require('~/cache/getLogStores');
 const { saveConvo } = require('~/models');
+const { updateConversationTitle } = require('~/server/services/ayoDashboard');
 
 /**
  * Add title to conversation in a way that avoids memory retention
@@ -77,6 +78,11 @@ const addTitle = async (req, { text, response, client }) => {
       },
       { context: 'api/server/services/Endpoints/agents/title.js', noUpsert: true },
     );
+
+    updateConversationTitle(req.user?.federatedTokens?.access_token, {
+      conversationId: response.conversationId,
+      title,
+    }).catch((err) => logger.error('[ayoDashboard] updateConversationTitle error', err));
   } catch (error) {
     logger.error('Error generating title:', error);
   }
