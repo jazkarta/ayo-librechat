@@ -306,6 +306,9 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
             ? response.content.filter((b) => b.type === 'text').map((b) => b.text).join('')
             : '');
         if (!wasAbortedBeforeComplete && responseText) {
+          const attachments = (userMessage?.files ?? [])
+            .filter((f) => f.filename && f.type && f.filepath)
+            .map((f) => ({ filename: f.filename, type: f.type, url: f.filepath }));
           syncChatToAyo({
             accessToken: req.user?.federatedTokens?.access_token,
             conversationId: conversation.conversationId,
@@ -314,6 +317,7 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
             prompt: userMessage?.text ?? '',
             response: responseText,
             isNewConvo,
+            attachments,
           }).catch((err) => logger.error('[ayoDashboard] syncChatToAyo error', err));
         }
 
