@@ -79,7 +79,7 @@ const addTitle = async (req, { text, response, client }) => {
       { context: 'api/server/services/Endpoints/agents/title.js', noUpsert: true },
     );
 
-    updateConversationTitle(req.user?.federatedTokens?.access_token, {
+    updateConversationTitle(req.session?.openidTokens?.accessToken ?? req.user?.federatedTokens?.access_token, {
       conversationId: response.conversationId,
       title,
     }).catch((err) => logger.error('[ayoDashboard] updateConversationTitle error', err));

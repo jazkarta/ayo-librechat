@@ -61,7 +61,8 @@ const createChat = async (token, { conversationId, userEmail, modelName, prompt,
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const err = new Error(`createChat failed: ${res.status}`);
+    const body = await res.text().catch(() => '');
+    const err = new Error(`createChat failed: ${res.status} ${body}`);
     err.status = res.status;
     throw err;
   }
@@ -83,7 +84,8 @@ const updateConversationTitle = async (accessToken, { conversationId, title }) =
     body: JSON.stringify({ conversation_id: conversationId, title }),
   });
   if (!res.ok) {
-    throw new Error(`updateConversationTitle failed: ${res.status}`);
+    const body = await res.text().catch(() => '');
+    throw new Error(`updateConversationTitle failed: ${res.status} ${body}`);
   }
   return res.json();
 };

@@ -122,7 +122,21 @@ const refreshController = async (req, res) => {
       const { password: _pw, __v: _v, totpSecret: _ts, backupCodes: _bc, ...safeUser } = user;
       return res.status(200).send({ token, user: safeUser });
     } catch (error) {
-      logger.error('[refreshController] OpenID token refresh error', error);
+      const oauthError = error?.cause?.error ?? error?.error;
+      const oauthDesc = error?.cause?.error_description ?? error?.error_description;
+      if (oauthError === 'invalid_grant' || oauthError === 'invalid_token') {
+        logger.warn('[refreshController] OpenID refresh token expired or revoked', {
+          error: oauthError,
+          description: oauthDesc,
+        });
+      } else {
+        logger.error('[refreshController] OpenID token refresh error', {
+          message: error?.message,
+          error: oauthError,
+          description: oauthDesc,
+          cause: error?.cause?.message,
+        });
+      }
       return res.status(403).redirect('/login');
     }
   }
