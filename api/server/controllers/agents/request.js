@@ -311,7 +311,7 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
             .map((f) => ({ filename: f.filename, type: f.type, url: f.filepath }));
           syncChatToAyo({
             req,
-            accessToken: req.user?.federatedTokens?.access_token ?? req.session?.openidTokens?.accessToken,
+            accessToken: req.session?.openidTokens?.accessToken ?? req.user?.federatedTokens?.access_token,
             refreshToken: req.session?.openidTokens?.refreshToken ?? req.user?.federatedTokens?.refresh_token,
             conversationId: conversation.conversationId,
             userEmail: req.user?.email,
