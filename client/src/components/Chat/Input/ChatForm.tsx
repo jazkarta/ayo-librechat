@@ -79,6 +79,7 @@ const ChatForm = memo(function ChatForm({
   const TextToSpeech = useRecoilValue(store.textToSpeech);
   const chatDirection = useRecoilValue(store.chatDirection);
   const automaticPlayback = useRecoilValue(store.automaticPlayback);
+  const conversationMode = useRecoilValue(store.conversationMode);
   const maximizeChatSpace = useRecoilValue(store.maximizeChatSpace);
   const centerFormOnLanding = useRecoilValue(store.centerFormOnLanding);
   const isTemporary = useRecoilValue(store.isTemporary);
@@ -416,7 +417,7 @@ const ChatForm = memo(function ChatForm({
                 </div>
               </div>
             )}
-            {TextToSpeech && automaticPlayback && <StreamAudio index={index} />}
+            {TextToSpeech && (automaticPlayback || conversationMode) && <StreamAudio index={index} />}
           </div>
         </div>
       </div>
