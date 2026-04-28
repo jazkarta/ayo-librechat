@@ -15,6 +15,9 @@ const refreshAccessToken = async (req, refreshToken) => {
       idToken: tokenset.id_token,
       refreshToken: tokenset.refresh_token || refreshToken,
     };
+    await new Promise((resolve, reject) =>
+      req.session.save((err) => (err ? reject(err) : resolve())),
+    );
   }
   return tokenset.access_token;
 };
@@ -134,7 +137,7 @@ const syncChatToAyo = async ({
     try {
       return await fn(token);
     } catch (err) {
-      if (err.status === 401 && refreshToken) {
+      if ((err.status === 401 || err.status === 403) && refreshToken) {
         token = await refreshAccessToken(req, refreshToken);
         return fn(token);
       }
@@ -152,4 +155,4 @@ const syncChatToAyo = async ({
   }
 };
 
-module.exports = { syncChatToAyo, updateConversationTitle };
+module.exports = { syncChatToAyo, updateConversationTitle, refreshAccessToken };
