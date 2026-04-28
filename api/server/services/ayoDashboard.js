@@ -25,23 +25,27 @@ const createConversation = async (accessToken, { conversationId, modelName }) =>
 
 /**
  * @param {string} accessToken
- * @param {{ conversationId: string, userEmail: string, modelName: string, prompt: string, response: string }} params
+ * @param {{ conversationId: string, userEmail: string, modelName: string, prompt: string, response: string, attachments?: Array<{filename: string, type: string, url: string}> }} params
  */
-const createChat = async (accessToken, { conversationId, userEmail, modelName, prompt, response }) => {
+const createChat = async (accessToken, { conversationId, userEmail, modelName, prompt, response, attachments = [] }) => {
   const url = `${getBaseUrl()}/api/chats/`;
+  const body = {
+    conversation_id: conversationId,
+    user_email: userEmail,
+    model_name: modelName,
+    prompt,
+    response,
+  };
+  if (attachments.length > 0) {
+    body.attachments = attachments;
+  }
   const res = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({
-      conversation_id: conversationId,
-      user_email: userEmail,
-      model_name: modelName,
-      prompt,
-      response,
-    }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     throw new Error(`createChat failed: ${res.status}`);
@@ -82,6 +86,7 @@ const updateConversationTitle = async (accessToken, { conversationId, title }) =
  * @param {string} params.prompt
  * @param {string} params.response
  * @param {boolean} params.isNewConvo
+ * @param {Array<{filename: string, type: string, url: string}>} [params.attachments]
  */
 const syncChatToAyo = async ({
   accessToken,
@@ -91,6 +96,7 @@ const syncChatToAyo = async ({
   prompt,
   response,
   isNewConvo,
+  attachments = [],
 }) => {
   if (!getBaseUrl()) {
     logger.warn('[ayoDashboard] AYO_API_URL not set, skipping sync');
@@ -105,7 +111,7 @@ const syncChatToAyo = async ({
     if (isNewConvo) {
       await createConversation(accessToken, { conversationId, modelName });
     }
-    await createChat(accessToken, { conversationId, userEmail, modelName, prompt, response });
+    await createChat(accessToken, { conversationId, userEmail, modelName, prompt, response, attachments });
   } catch (err) {
     logger.error('[ayoDashboard] syncChatToAyo error', err);
   }
