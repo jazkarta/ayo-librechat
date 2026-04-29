@@ -3,7 +3,7 @@ const { logger } = require('@librechat/data-schemas');
 const { CacheKeys } = require('librechat-data-provider');
 const getLogStores = require('~/cache/getLogStores');
 const { saveConvo } = require('~/models');
-const { updateConversationTitle, refreshAccessToken } = require('~/server/services/ayoDashboard');
+const { updateConversationTitle, refreshAccessToken, isTokenExpired } = require('~/server/services/ayoDashboard');
 
 /**
  * Add title to conversation in a way that avoids memory retention
@@ -81,14 +81,21 @@ const addTitle = async (req, { text, response, client }) => {
 
     const accessToken = req.session?.openidTokens?.accessToken ?? req.user?.federatedTokens?.access_token;
     const refreshToken = req.session?.openidTokens?.refreshToken ?? req.user?.federatedTokens?.refresh_token;
-    updateConversationTitle(accessToken, { conversationId: response.conversationId, title })
+    let titleToken = accessToken;
+    if (accessToken && isTokenExpired(accessToken) && refreshToken) {
+      logger.debug('[ayoDashboard] accessToken expired before updateConversationTitle, refreshing proactively');
+      titleToken = await refreshAccessToken(req, refreshToken);
+    }
+    updateConversationTitle(titleToken, { conversationId: response.conversationId, title })
       .catch(async (err) => {
+        logger.warn('[ayoDashboard] updateConversationTitle failed', { status: err.status, message: err.message });
         if ((err.status === 401 || err.status === 403) && refreshToken) {
           try {
+            logger.debug('[ayoDashboard] updateConversationTitle retrying with refreshed token');
             const newToken = await refreshAccessToken(req, refreshToken);
             await updateConversationTitle(newToken, { conversationId: response.conversationId, title });
           } catch (retryErr) {
-            logger.error('[ayoDashboard] updateConversationTitle error', retryErr);
+            logger.error('[ayoDashboard] updateConversationTitle retry failed', retryErr);
           }
         } else {
           logger.error('[ayoDashboard] updateConversationTitle error', err);
