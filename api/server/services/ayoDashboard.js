@@ -4,6 +4,17 @@ const { getOpenIdConfig } = require('~/strategies/openidStrategy');
 
 const getBaseUrl = () => process.env.AYO_API_URL;
 
+/** Decode JWT exp claim without verifying signature. Returns true if expired or undecodable. */
+const isTokenExpired = (token) => {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+    console.log('[DEBUG isTokenExpired] exp:', new Date(payload.exp * 1000).toISOString(), '| now:', new Date().toISOString(), '| expired:', payload.exp < Math.floor(Date.now() / 1000));
+    return payload.exp < Math.floor(Date.now() / 1000);
+  } catch {
+    return false;
+  }
+};
+
 const refreshAccessToken = async (req, refreshToken) => {
   const openIdConfig = getOpenIdConfig();
   const refreshParams = process.env.OPENID_SCOPE ? { scope: process.env.OPENID_SCOPE } : {};
@@ -126,6 +137,7 @@ const syncChatToAyo = async ({
     logger.warn('[ayoDashboard] AYO_API_URL not set, skipping sync');
     return;
   }
+
   if (!accessToken) {
     logger.warn('[ayoDashboard] No access token available, skipping sync');
     return;
@@ -133,11 +145,18 @@ const syncChatToAyo = async ({
 
   let token = accessToken;
 
+  if (isTokenExpired(token) && refreshToken) {
+    logger.debug('[ayoDashboard] accessToken expired before API call, refreshing proactively');
+    token = await refreshAccessToken(req, refreshToken);
+  }
+
   const withRefresh = async (fn) => {
     try {
       return await fn(token);
     } catch (err) {
+      logger.warn('[ayoDashboard] syncChatToAyo API call failed', { status: err.status, message: err.message });
       if ((err.status === 401 || err.status === 403) && refreshToken) {
+        logger.debug('[ayoDashboard] syncChatToAyo retrying with refreshed token');
         token = await refreshAccessToken(req, refreshToken);
         return fn(token);
       }
@@ -155,4 +174,4 @@ const syncChatToAyo = async ({
   }
 };
 
-module.exports = { syncChatToAyo, updateConversationTitle, refreshAccessToken };
+module.exports = { syncChatToAyo, updateConversationTitle, refreshAccessToken, isTokenExpired };
