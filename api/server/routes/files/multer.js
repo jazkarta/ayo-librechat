@@ -64,10 +64,6 @@ const createFileFilter = (customFileConfig) => {
       endpointType,
     });
 
-    console.log('[multer fileFilter] url:', req.originalUrl, '| mimetype:', file.mimetype, '| endpoint:', endpoint, '| endpointType:', endpointType);
-    console.log('[multer fileFilter] supportedMimeTypes:', endpointFileConfig.supportedMimeTypes);
-    console.log('[multer fileFilter] checkType result:', defaultFileConfig.checkType(file.mimetype, endpointFileConfig.supportedMimeTypes));
-
     if (!defaultFileConfig.checkType(file.mimetype, endpointFileConfig.supportedMimeTypes)) {
       return cb(new Error('Unsupported file type: ' + file.mimetype), false);
     }
@@ -80,9 +76,7 @@ const createFileFilter = (customFileConfig) => {
 
 const createMulterInstance = async () => {
   const appConfig = await getAppConfig();
-  console.log('[multer] appConfig.fileConfig:', JSON.stringify(appConfig?.fileConfig, null, 2));
   const fileConfig = mergeFileConfig(appConfig?.fileConfig);
-  console.log('[multer] merged endpoints.default.supportedMimeTypes:', fileConfig?.endpoints?.default?.supportedMimeTypes);
   const fileFilter = createFileFilter(fileConfig);
   return multer({
     storage,
