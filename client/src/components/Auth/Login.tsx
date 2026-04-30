@@ -39,12 +39,14 @@ function Login() {
 
     const oauthError = searchParams?.get('error');
     if (oauthError && oauthError === ErrorTypes.AUTH_FAILED) {
+      const email = searchParams.get('email') ?? '';
       showToast({
-        message: localize('com_auth_error_oauth_failed'),
+        message: localize('com_auth_error_oauth_failed', { 0: email }),
         status: 'error',
       });
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('error');
+      newParams.delete('email');
       setSearchParams(newParams, { replace: true });
     }
   }, [searchParams, setSearchParams, showToast, localize, location.state]);

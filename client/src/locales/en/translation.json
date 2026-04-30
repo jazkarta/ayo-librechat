@@ -179,7 +179,7 @@
   "com_auth_error_login_rl": "Too many tries. Please wait a bit and try again later.",
   "com_auth_error_login_server": "Oops! Something went wrong on our end. Please wait a moment and try again.",
   "com_auth_error_login_unverified": "Your account needs to be confirmed. Please ask a parent or an adult for help.",
-  "com_auth_error_oauth_failed": "Oops! We couldn't sign you in with that account. Please ask a parent or an adult for help.",
+  "com_auth_error_oauth_failed": "Oops! We couldn't sign you in with that account ({{0}}). Please ask your parent or an adult for help.",
   "com_auth_facebook_login": "Continue with Facebook",
   "com_auth_full_name": "Full name",
   "com_auth_github_login": "Continue with Github",

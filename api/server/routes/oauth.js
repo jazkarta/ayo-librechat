@@ -100,11 +100,20 @@ router.get('/openid', (req, res, next) => {
 
 router.get(
   '/openid/callback',
-  passport.authenticate('openid', {
-    failureRedirect: `${domains.client}/oauth/error`,
-    failureMessage: true,
-    session: false,
-  }),
+  (req, res, next) => {
+    passport.authenticate('openid', { session: false }, (err, user, info) => {
+      if (err) return next(err);
+      if (!user) {
+        const email = (info && typeof info === 'object' ? info.email : '') || '';
+        const emailParam = email ? `&email=${encodeURIComponent(email)}` : '';
+        return res.redirect(
+          `${domains.client}/login?redirect=false&error=${ErrorTypes.AUTH_FAILED}${emailParam}`,
+        );
+      }
+      req.user = user;
+      next();
+    })(req, res, next);
+  },
   setBalanceConfig,
   checkDomainAllowed,
   oauthHandler,
