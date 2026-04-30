@@ -471,12 +471,14 @@ async function processOpenIDAuth(tokenset, existingUsersOnly = false) {
 
   const email = getOpenIdEmail(userinfo);
 
+  const authError = (message) => Object.assign(new Error(message), { email });
+
   const baseConfig = await getAppConfig({ baseOnly: true });
   if (!isEmailDomainAllowed(email, baseConfig?.registration?.allowedDomains)) {
     logger.error(
       `[OpenID Strategy] Authentication blocked - email domain not allowed [Identifier: ${email}]`,
     );
-    throw new Error('Email domain not allowed');
+    throw authError('Email domain not allowed');
   }
 
   const result = await findOpenIDUser({
@@ -488,9 +490,8 @@ async function processOpenIDAuth(tokenset, existingUsersOnly = false) {
   });
   let user = result.user;
   const error = result.error;
-
   if (error) {
-    throw new Error(ErrorTypes.AUTH_FAILED);
+    throw authError(ErrorTypes.AUTH_FAILED);
   }
 
   const appConfig = user?.tenantId ? await resolveAppConfigForUser(getAppConfig, user) : baseConfig;
@@ -552,7 +553,7 @@ async function processOpenIDAuth(tokenset, existingUsersOnly = false) {
         requiredRoles.length === 1
           ? `"${requiredRoles[0]}"`
           : `one of: ${requiredRoles.map((r) => `"${r}"`).join(', ')}`;
-      throw new Error(`You must have ${rolesList} role to log in.`);
+      throw authError(`You must have ${rolesList} role to log in.`);
     }
 
     const roleValues = Array.isArray(roles) ? roles : roles.split(/[\s,]+/).filter(Boolean);
@@ -562,7 +563,7 @@ async function processOpenIDAuth(tokenset, existingUsersOnly = false) {
         requiredRoles.length === 1
           ? `"${requiredRoles[0]}"`
           : `one of: ${requiredRoles.map((r) => `"${r}"`).join(', ')}`;
-      throw new Error(`You must have ${rolesList} role to log in.`);
+      throw authError(`You must have ${rolesList} role to log in.`);
     }
   }
 
@@ -730,13 +731,13 @@ function createOpenIDCallback(existingUsersOnly) {
       done(null, user);
     } catch (err) {
       if (err.message === 'Email domain not allowed') {
-        return done(null, false, { message: err.message });
+        return done(null, false, { message: err.message, email: err.email || '' });
       }
       if (err.message === ErrorTypes.AUTH_FAILED) {
-        return done(null, false, { message: err.message });
+        return done(null, false, { message: err.message, email: err.email || '' });
       }
       if (err.message && err.message.includes('role to log in')) {
-        return done(null, false, { message: err.message });
+        return done(null, false, { message: err.message, email: err.email || '' });
       }
       logger.error('[openidStrategy] login failed', err);
       done(err);
