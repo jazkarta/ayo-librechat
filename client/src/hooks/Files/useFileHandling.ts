@@ -174,6 +174,8 @@ const useFileHandlingCore = (params: UseFileHandling | undefined, fileState: Fil
 
         if (error?.code === 'ERR_CANCELED') {
           errorMessage = 'com_error_files_upload_canceled';
+        } else if (error?.response?.status === 413) {
+          errorMessage = localize('com_error_files_upload_too_large', { 0: 20 });
         } else if (error?.response?.data?.message) {
           errorMessage = error.response.data.message;
         }
