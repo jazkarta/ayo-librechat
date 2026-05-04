@@ -21,6 +21,7 @@ const { verifyEmail, resendVerificationEmail } = require('~/server/services/Auth
 const { getMCPManager, getFlowStateManager, getMCPServersRegistry } = require('~/config');
 const { invalidateCachedTools } = require('~/server/services/Config/getCachedTools');
 const { processDeleteRequest } = require('~/server/services/Files/process');
+const { getCurrentUserInfo, isTokenExpired, refreshAccessToken } = require('~/server/services/ayoDashboard');
 const { getAppConfig } = require('~/server/services/Config');
 const { getLogStores } = require('~/cache');
 const db = require('~/models');
@@ -36,6 +37,24 @@ const getUserController = async (req, res) => {
   delete userData.password;
   delete userData.totpSecret;
   delete userData.backupCodes;
+
+  const accessToken = req.session?.openidTokens?.accessToken ?? req.user?.federatedTokens?.access_token;
+  const refreshToken = req.session?.openidTokens?.refreshToken ?? req.user?.federatedTokens?.refresh_token;
+  let ayoToken = accessToken;
+  if (accessToken && isTokenExpired(accessToken) && refreshToken) {
+    logger.debug('[getUserController] accessToken expired, refreshing proactively');
+    ayoToken = await refreshAccessToken(req, refreshToken);
+  }
+  if (ayoToken) {
+    try {
+      const ayoUser = await getCurrentUserInfo(ayoToken);
+      if (ayoUser?.username) {
+        userData.username = ayoUser.username;
+      }
+    } catch (err) {
+      logger.warn(`[getUserController] Failed to fetch AYO user info: ${err.message}`);
+    }
+  }
   if (appConfig.fileStrategy === FileSources.s3 && userData.avatar) {
     const avatarNeedsRefresh = needsRefresh(userData.avatar, 3600);
     if (!avatarNeedsRefresh) {

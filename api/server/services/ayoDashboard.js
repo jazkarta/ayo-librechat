@@ -4,11 +4,25 @@ const { getOpenIdConfig } = require('~/strategies/openidStrategy');
 
 const getBaseUrl = () => process.env.AYO_API_URL;
 
+const getCurrentUserInfo = async (token) => {
+  const url = `${getBaseUrl()}/api/users/me/`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    const err = new Error(`getCurrentUserInfo failed: ${res.status} ${body}`);
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+};
+
 /** Decode JWT exp claim without verifying signature. Returns true if expired or undecodable. */
 const isTokenExpired = (token) => {
   try {
     const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
-    console.log('[DEBUG isTokenExpired] exp:', new Date(payload.exp * 1000).toISOString(), '| now:', new Date().toISOString(), '| expired:', payload.exp < Math.floor(Date.now() / 1000));
     return payload.exp < Math.floor(Date.now() / 1000);
   } catch {
     return false;
@@ -174,4 +188,4 @@ const syncChatToAyo = async ({
   }
 };
 
-module.exports = { syncChatToAyo, updateConversationTitle, refreshAccessToken, isTokenExpired };
+module.exports = { syncChatToAyo, updateConversationTitle, refreshAccessToken, isTokenExpired, getCurrentUserInfo };
