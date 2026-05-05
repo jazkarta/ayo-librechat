@@ -102,13 +102,14 @@ router.get(
   '/openid/callback',
   (req, res, next) => {
     passport.authenticate('openid', { session: false }, (err, user, info) => {
+      console.log('[oauth /openid/callback] err:', err, '| user:', user ? user._id : null, '| info:', info);
       if (err) return next(err);
       if (!user) {
         const email = (info && typeof info === 'object' ? info.email : '') || '';
         const emailParam = email ? `&email=${encodeURIComponent(email)}` : '';
-        return res.redirect(
-          `${domains.client}/login?redirect=false&error=${ErrorTypes.AUTH_FAILED}${emailParam}`,
-        );
+        const redirectUrl = `${domains.client}/login?redirect=false&error=${ErrorTypes.AUTH_FAILED}${emailParam}`;
+        console.log('[oauth /openid/callback] auth failed — redirecting:', redirectUrl);
+        return res.redirect(redirectUrl);
       }
       req.user = user;
       next();

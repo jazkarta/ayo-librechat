@@ -490,7 +490,9 @@ async function processOpenIDAuth(tokenset, existingUsersOnly = false) {
   });
   let user = result.user;
   const error = result.error;
+  console.log('[OpenID Strategy] findOpenIDUser result:', { email, userId: user ? user._id : null, error: error || null });
   if (error) {
+    console.log('[OpenID Strategy] AUTH_FAILED for email:', email, '| reason:', error);
     throw authError(ErrorTypes.AUTH_FAILED);
   }
 
@@ -731,12 +733,15 @@ function createOpenIDCallback(existingUsersOnly) {
       done(null, user);
     } catch (err) {
       if (err.message === 'Email domain not allowed') {
+        console.log('[openidStrategy] auth rejected — domain not allowed:', { email: err.email, message: err.message });
         return done(null, false, { message: err.message, email: err.email || '' });
       }
       if (err.message === ErrorTypes.AUTH_FAILED) {
+        console.log('[openidStrategy] auth rejected — AUTH_FAILED:', { email: err.email, message: err.message });
         return done(null, false, { message: err.message, email: err.email || '' });
       }
       if (err.message && err.message.includes('role to log in')) {
+        console.log('[openidStrategy] auth rejected — role check failed:', { email: err.email, message: err.message });
         return done(null, false, { message: err.message, email: err.email || '' });
       }
       logger.error('[openidStrategy] login failed', err);

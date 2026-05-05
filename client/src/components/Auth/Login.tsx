@@ -40,6 +40,7 @@ function Login() {
     const oauthError = searchParams?.get('error');
     if (oauthError && oauthError === ErrorTypes.AUTH_FAILED) {
       const email = searchParams.get('email') ?? '';
+      console.log('[Login] OAuth error detected:', { oauthError, email, searchParams: Object.fromEntries(searchParams) });
       showToast({
         message: localize('com_auth_error_oauth_failed', { 0: email }),
         status: 'error',
