@@ -102,7 +102,6 @@ router.get(
   '/openid/callback',
   (req, res, next) => {
     passport.authenticate('openid', { session: false }, (err, user, info) => {
-      console.log('[oauth /openid/callback] err:', err, '| user:', user ? user._id : null, '| info:', info);
       if (err) return next(err);
       if (!user) {
         const email = (info && typeof info === 'object' ? info.email : '') || '';
