@@ -1,5 +1,4 @@
 const openIdClient = require('openid-client');
-const { logger } = require('@librechat/data-schemas');
 const { getOpenIdConfig } = require('~/strategies/openidStrategy');
 
 const getBaseUrl = () => process.env.AYO_API_URL;
@@ -148,19 +147,19 @@ const syncChatToAyo = async ({
   attachments = [],
 }) => {
   if (!getBaseUrl()) {
-    logger.warn('[ayoDashboard] AYO_API_URL not set, skipping sync');
+    console.warn('[ayoDashboard] AYO_API_URL not set, skipping sync');
     return;
   }
 
   if (!accessToken) {
-    logger.warn('[ayoDashboard] No access token available, skipping sync');
+    console.warn('[ayoDashboard] No access token available, skipping sync');
     return;
   }
 
   let token = accessToken;
 
   if (isTokenExpired(token) && refreshToken) {
-    logger.debug('[ayoDashboard] accessToken expired before API call, refreshing proactively');
+    console.log('[ayoDashboard] Access token expired, refreshing proactively');
     token = await refreshAccessToken(req, refreshToken);
   }
 
@@ -168,9 +167,8 @@ const syncChatToAyo = async ({
     try {
       return await fn(token);
     } catch (err) {
-      logger.warn('[ayoDashboard] syncChatToAyo API call failed', { status: err.status, message: err.message });
       if ((err.status === 401 || err.status === 403) && refreshToken) {
-        logger.debug('[ayoDashboard] syncChatToAyo retrying with refreshed token');
+        console.log('[ayoDashboard] Token rejected, retrying with refreshed token');
         token = await refreshAccessToken(req, refreshToken);
         return fn(token);
       }
@@ -184,7 +182,7 @@ const syncChatToAyo = async ({
     }
     await withRefresh((t) => createChat(t, { conversationId, userEmail, modelName, prompt, response, attachments }));
   } catch (err) {
-    logger.error('[ayoDashboard] syncChatToAyo error', err);
+    console.error('[ayoDashboard] Failed to sync chat turn:', { conversationId, status: err.status, message: err.message });
   }
 };
 
