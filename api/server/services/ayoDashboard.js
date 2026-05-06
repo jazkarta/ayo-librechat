@@ -1,4 +1,5 @@
 const openIdClient = require('openid-client');
+const { getMessages } = require('~/models');
 const { getOpenIdConfig } = require('~/strategies/openidStrategy');
 
 const getBaseUrl = () => process.env.AYO_API_URL;
@@ -46,10 +47,6 @@ const refreshAccessToken = async (req, refreshToken) => {
   return tokenset.access_token;
 };
 
-/**
- * @param {string} token
- * @param {{ conversationId: string, modelName: string }} params
- */
 const createConversation = async (token, { conversationId, modelName }) => {
   const url = `${getBaseUrl()}/api/chats/conversations/`;
   const res = await fetch(url, {
@@ -66,10 +63,6 @@ const createConversation = async (token, { conversationId, modelName }) => {
   return res.json();
 };
 
-/**
- * @param {string} token
- * @param {{ conversationId: string, userEmail: string, modelName: string, prompt: string, response: string, attachments?: Array<{filename: string, type: string, url: string}> }} params
- */
 const createChat = async (token, { conversationId, userEmail, modelName, prompt, response, attachments = [] }) => {
   const url = `${getBaseUrl()}/api/chats/`;
   const body = {
@@ -96,10 +89,6 @@ const createChat = async (token, { conversationId, userEmail, modelName, prompt,
   return res.json();
 };
 
-/**
- * @param {string} accessToken
- * @param {{ conversationId: string, title: string }} params
- */
 const updateConversationTitle = async (accessToken, { conversationId, title }) => {
   const url = `${getBaseUrl()}/api/chats/conversations/update-title/`;
   const res = await fetch(url, {
@@ -117,23 +106,59 @@ const updateConversationTitle = async (accessToken, { conversationId, title }) =
   return res.json();
 };
 
-/**
- * Saves a completed chat turn to ayo-dashboard.
- * Creates the conversation record first (only for new convos), then the chat record.
- * Fires as non-blocking — errors are logged but do not affect the LibreChat response.
- *
- * @param {object} params
- * @param {object} params.req
- * @param {string} params.accessToken
- * @param {string} [params.refreshToken]
- * @param {string} params.conversationId
- * @param {string} params.userEmail
- * @param {string} params.modelName
- * @param {string} params.prompt
- * @param {string} params.response
- * @param {boolean} params.isNewConvo
- * @param {Array<{filename: string, type: string, url: string}>} [params.attachments]
- */
+const extractResponseText = (msg) => {
+  if (!msg) return null;
+  if (msg.text) return msg.text;
+  if (Array.isArray(msg.content)) {
+    const textPart = msg.content.find((b) => b.type === 'text');
+    if (textPart?.text) return textPart.text;
+    const errorPart = msg.content.find((b) => b.type === 'error');
+    if (errorPart?.error) {
+      const raw = errorPart.error.split('\n')[0];
+      return `[Error] ${raw.length > 150 ? raw.slice(0, 150) + '...' : raw}`;
+    }
+  }
+  return null;
+};
+
+const backfillConversationToAyo = async ({ withRefresh, conversationId, modelName, userEmail }) => {
+  const messages = await getMessages({ conversationId });
+  const userMessages = messages.filter((m) => m.isCreatedByUser);
+
+  await withRefresh((t) => createConversation(t, { conversationId, modelName }));
+
+  for (const userMsg of userMessages) {
+    const assistantMsg = messages.find(
+      (m) => !m.isCreatedByUser && m.parentMessageId === userMsg.messageId,
+    );
+    const responseText = extractResponseText(assistantMsg) || '[Error] No response was generated.';
+    const attachments = (userMsg.files ?? [])
+      .filter((f) => f.filename && f.type && f.filepath)
+      .map((f) => ({ filename: f.filename, type: f.type, url: f.filepath }));
+
+    try {
+      await withRefresh((t) =>
+        createChat(t, {
+          conversationId,
+          userEmail,
+          modelName,
+          prompt: userMsg.text || '',
+          response: responseText,
+          attachments,
+        }),
+      );
+    } catch (chatErr) {
+      console.error('[ayoDashboard] Failed to sync message during backfill:', {
+        conversationId,
+        messageId: userMsg.messageId,
+        message: chatErr.message,
+      });
+    }
+  }
+
+  console.log(`[ayoDashboard] Backfilled ${userMessages.length} chat(s) for conversation: ${conversationId}`);
+};
+
 const syncChatToAyo = async ({
   req,
   accessToken,
@@ -182,8 +207,17 @@ const syncChatToAyo = async ({
     }
     await withRefresh((t) => createChat(t, { conversationId, userEmail, modelName, prompt, response, attachments }));
   } catch (err) {
-    console.error('[ayoDashboard] Failed to sync chat turn:', { conversationId, status: err.status, message: err.message });
+    if (err.status === 400 && err.message?.includes('does not exist')) {
+      console.log('[ayoDashboard] Conversation missing in Django, backfilling from MongoDB:', conversationId);
+      try {
+        await backfillConversationToAyo({ withRefresh, conversationId, modelName, userEmail });
+      } catch (backfillErr) {
+        console.error('[ayoDashboard] Backfill failed:', { conversationId, message: backfillErr.message });
+      }
+    } else {
+      console.error('[ayoDashboard] Failed to sync chat turn:', { conversationId, status: err.status, message: err.message });
+    }
   }
 };
 
-module.exports = { syncChatToAyo, updateConversationTitle, refreshAccessToken, isTokenExpired, getCurrentUserInfo };
+module.exports = { syncChatToAyo, updateConversationTitle, refreshAccessToken, isTokenExpired, getCurrentUserInfo, extractResponseText };

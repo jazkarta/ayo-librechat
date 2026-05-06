@@ -13,7 +13,7 @@ const { disposeClient, clientRegistry, requestDataMap } = require('~/server/clea
 const { handleAbortError } = require('~/server/middleware');
 const { logViolation } = require('~/cache');
 const { saveMessage } = require('~/models');
-const { syncChatToAyo } = require('~/server/services/ayoDashboard');
+const { syncChatToAyo, extractResponseText } = require('~/server/services/ayoDashboard');
 
 function createCloseHandler(abortController) {
   return function (manual) {
@@ -317,16 +317,10 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
             .map((f) => ({ filename: f.filename, type: f.type, url: f.filepath }));
           syncToAyo({ modelName: conversation.model, prompt: userMessage?.text ?? '', response: responseText, isNewConvo, attachments });
         } else if (!wasAbortedBeforeComplete && !responseText) {
-          const errorPart = Array.isArray(response?.content)
-            ? response.content.find((b) => b.type === 'error')
-            : null;
-          const rawError = errorPart?.error || 'An error occurred while generating a response.';
-          const raw = rawError.split('\n')[0];
-          const trimmedError = raw.length > 150 ? raw.slice(0, 150) + '...' : raw;
           syncToAyo({
             modelName: conversation.model,
             prompt: userMessage?.text ?? '',
-            response: `[Error] ${trimmedError}`,
+            response: extractResponseText(response) || '[Error] An error occurred while generating a response.',
             isNewConvo,
           });
         }
