@@ -13,7 +13,7 @@ const { disposeClient, clientRegistry, requestDataMap } = require('~/server/clea
 const { handleAbortError } = require('~/server/middleware');
 const { logViolation } = require('~/cache');
 const { saveMessage } = require('~/models');
-const { syncChatToAyo } = require('~/server/services/ayoDashboard');
+const { syncChatToAyo, extractResponseText } = require('~/server/services/ayoDashboard');
 
 function createCloseHandler(abortController) {
   return function (manual) {
@@ -199,6 +199,12 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
         );
       }
 
+      const accessToken = req.session?.openidTokens?.accessToken ?? req.user?.federatedTokens?.access_token;
+      const refreshToken = req.session?.openidTokens?.refreshToken ?? req.user?.federatedTokens?.refresh_token;
+      const syncToAyo = ({ modelName, prompt, response, isNewConvo, attachments = [] }) =>
+        syncChatToAyo({ req, accessToken, refreshToken, conversationId, userEmail: req.user?.email, modelName, prompt, response, isNewConvo, attachments })
+          .catch((err) => logger.error('[ayoDashboard] syncChatToAyo error', err));
+
       try {
         const onStart = (userMsg, respMsgId, _isNewConvo) => {
           userMessage = userMsg;
@@ -309,18 +315,14 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
           const attachments = (userMessage?.files ?? [])
             .filter((f) => f.filename && f.type && f.filepath)
             .map((f) => ({ filename: f.filename, type: f.type, url: f.filepath }));
-          syncChatToAyo({
-            req,
-            accessToken: req.session?.openidTokens?.accessToken ?? req.user?.federatedTokens?.access_token,
-            refreshToken: req.session?.openidTokens?.refreshToken ?? req.user?.federatedTokens?.refresh_token,
-            conversationId: conversation.conversationId,
-            userEmail: req.user?.email,
+          syncToAyo({ modelName: conversation.model, prompt: userMessage?.text ?? '', response: responseText, isNewConvo, attachments });
+        } else if (!wasAbortedBeforeComplete && !responseText) {
+          syncToAyo({
             modelName: conversation.model,
             prompt: userMessage?.text ?? '',
-            response: responseText,
+            response: extractResponseText(response) || '[Error] An error occurred while generating a response.',
             isNewConvo,
-            attachments,
-          }).catch((err) => logger.error('[ayoDashboard] syncChatToAyo error', err));
+          });
         }
 
         // Check if our job was replaced by a new request before emitting
@@ -411,6 +413,14 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
           logger.error(`[ResumableAgentController] Generation error for ${streamId}:`, error);
           await GenerationJobManager.emitError(streamId, error.message || 'Generation failed');
           GenerationJobManager.completeJob(streamId, error.message);
+
+          const isNewConvo = !reqConversationId || reqConversationId === 'new';
+          syncToAyo({
+            modelName: endpointOption.modelOptions?.model || endpointOption.model_parameters?.model,
+            prompt: userMessage?.text ?? text,
+            response: `[Error] ${error.message || 'An error occurred while generating a response.'}`,
+            isNewConvo,
+          });
         }
 
         await decrementPendingRequest(userId);
