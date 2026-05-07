@@ -106,6 +106,58 @@ const updateConversationTitle = async (accessToken, { conversationId, title }) =
   return res.json();
 };
 
+const getTokensFromReq = (req) => ({
+  accessToken: req.session?.openidTokens?.accessToken ?? req.user?.federatedTokens?.access_token,
+  refreshToken: req.session?.openidTokens?.refreshToken ?? req.user?.federatedTokens?.refresh_token,
+});
+
+const callWithRefresh = async (req, accessToken, refreshToken, fn) => {
+  let token = accessToken;
+  if (isTokenExpired(token) && refreshToken) {
+    console.log('[ayoDashboard] Access token expired before delete notify, refreshing proactively');
+    token = await refreshAccessToken(req, refreshToken);
+  }
+  try {
+    return await fn(token);
+  } catch (err) {
+    if ((err.status === 401 || err.status === 403) && refreshToken) {
+      console.log('[ayoDashboard] Token rejected on delete notify, retrying with refreshed token');
+      token = await refreshAccessToken(req, refreshToken);
+      return fn(token);
+    }
+    throw err;
+  }
+};
+
+const markConversationDeleted = async (token, conversationId) => {
+  const url = `${getBaseUrl()}/api/chats/conversations/mark-deleted/`;
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ conversation_id: conversationId }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    const err = new Error(`markConversationDeleted failed: ${res.status} ${body}`);
+    err.status = res.status;
+    throw err;
+  }
+};
+
+const syncConversationDeleteToAyo = async (req, conversationId) => {
+  if (!getBaseUrl()) {
+    console.warn('[ayoDashboard] AYO_API_URL not set, skipping delete sync');
+    return;
+  }
+  const { accessToken, refreshToken } = getTokensFromReq(req);
+  if (!accessToken) {
+    console.warn('[ayoDashboard] No access token for delete notification, skipping');
+    return;
+  }
+  await callWithRefresh(req, accessToken, refreshToken, (t) => markConversationDeleted(t, conversationId));
+  console.log('[ayoDashboard] Conversation marked deleted in ayo:', conversationId);
+};
+
 const extractResponseText = (msg) => {
   if (!msg) return null;
   if (msg.text) return msg.text;
@@ -220,4 +272,4 @@ const syncChatToAyo = async ({
   }
 };
 
-module.exports = { syncChatToAyo, updateConversationTitle, refreshAccessToken, isTokenExpired, getCurrentUserInfo, extractResponseText };
+module.exports = { syncChatToAyo, syncConversationDeleteToAyo, updateConversationTitle, refreshAccessToken, isTokenExpired, getCurrentUserInfo, extractResponseText };

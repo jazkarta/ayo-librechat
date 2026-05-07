@@ -14,6 +14,7 @@ const { forkConversation, duplicateConversation } = require('~/server/utils/impo
 const { storage, importFileFilter } = require('~/server/routes/files/multer');
 const requireJwtAuth = require('~/server/middleware/requireJwtAuth');
 const { importConversations } = require('~/server/utils/import');
+const { syncConversationDeleteToAyo } = require('~/server/services/ayoDashboard');
 const getLogStores = require('~/cache/getLogStores');
 const db = require('~/models');
 
@@ -130,6 +131,9 @@ router.delete('/', async (req, res) => {
     if (filter.conversationId) {
       await db.deleteToolCalls(req.user.id, filter.conversationId);
       await db.deleteConvoSharedLink(req.user.id, filter.conversationId);
+      syncConversationDeleteToAyo(req, filter.conversationId).catch((err) =>
+        logger.error('[ayoDashboard] syncConversationDeleteToAyo error', err),
+      );
     }
     res.status(201).json(dbResponse);
   } catch (error) {
