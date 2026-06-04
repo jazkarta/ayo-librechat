@@ -202,7 +202,7 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
       const accessToken = req.session?.openidTokens?.accessToken ?? req.user?.federatedTokens?.access_token;
       const refreshToken = req.session?.openidTokens?.refreshToken ?? req.user?.federatedTokens?.refresh_token;
       const syncToAyo = ({ modelName, prompt, response, isNewConvo, attachments = [] }) =>
-        syncChatToAyo({ req, accessToken, refreshToken, conversationId, userEmail: req.user?.email, modelName, prompt, response, isNewConvo, attachments })
+        syncChatToAyo({ req, accessToken, refreshToken, conversationId, userEmail: req.user?.email, modelName, prompt, response, isNewConvo, attachments, timezone: req.headers['x-timezone'] })
           .catch((err) => logger.error('[ayoDashboard] syncChatToAyo error', err));
 
       try {

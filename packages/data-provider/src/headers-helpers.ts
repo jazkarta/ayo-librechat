@@ -11,3 +11,10 @@ export function setTokenHeader(token: string | undefined) {
     axios.defaults.headers.common['Authorization'] = 'Bearer ' + token;
   }
 }
+
+export function setTimezoneHeader(): void {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (timezone) {
+    axios.defaults.headers.common['X-Timezone'] = timezone;
+  }
+}

@@ -47,11 +47,15 @@ const refreshAccessToken = async (req, refreshToken) => {
   return tokenset.access_token;
 };
 
-const createConversation = async (token, { conversationId, modelName }) => {
+const createConversation = async (token, { conversationId, modelName, timezone }) => {
   const url = `${getBaseUrl()}/api/chats/conversations/`;
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  if (timezone) {
+    headers['X-Timezone'] = timezone;
+  }
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers,
     body: JSON.stringify({ conversation_id: conversationId, model_name: modelName }),
   });
   if (!res.ok) {
@@ -63,8 +67,12 @@ const createConversation = async (token, { conversationId, modelName }) => {
   return res.json();
 };
 
-const createChat = async (token, { conversationId, userEmail, modelName, prompt, response, attachments = [] }) => {
+const createChat = async (token, { conversationId, userEmail, modelName, prompt, response, attachments = [], timezone }) => {
   const url = `${getBaseUrl()}/api/chats/`;
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  if (timezone) {
+    headers['X-Timezone'] = timezone;
+  }
   const body = {
     conversation_id: conversationId,
     user_email: userEmail,
@@ -77,7 +85,7 @@ const createChat = async (token, { conversationId, userEmail, modelName, prompt,
   }
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers,
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -222,6 +230,7 @@ const syncChatToAyo = async ({
   response,
   isNewConvo,
   attachments = [],
+  timezone,
 }) => {
   if (!getBaseUrl()) {
     console.warn('[ayoDashboard] AYO_API_URL not set, skipping sync');
@@ -255,9 +264,9 @@ const syncChatToAyo = async ({
 
   try {
     if (isNewConvo) {
-      await withRefresh((t) => createConversation(t, { conversationId, modelName }));
+      await withRefresh((t) => createConversation(t, { conversationId, modelName, timezone }));
     }
-    await withRefresh((t) => createChat(t, { conversationId, userEmail, modelName, prompt, response, attachments }));
+    await withRefresh((t) => createChat(t, { conversationId, userEmail, modelName, prompt, response, attachments, timezone }));
   } catch (err) {
     if (err.status === 400 && err.message?.includes('does not exist')) {
       console.log('[ayoDashboard] Conversation missing in Django, backfilling from MongoDB:', conversationId);
