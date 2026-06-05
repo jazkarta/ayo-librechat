@@ -67,7 +67,7 @@ const createConversation = async (token, { conversationId, modelName, timezone }
   return res.json();
 };
 
-const createChat = async (token, { conversationId, userEmail, modelName, prompt, response, attachments = [], timezone }) => {
+const createChat = async (token, { conversationId, userEmail, modelName, prompt, response, attachments = [], timezone, metadata }) => {
   const url = `${getBaseUrl()}/api/chats/`;
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
   if (timezone) {
@@ -82,6 +82,9 @@ const createChat = async (token, { conversationId, userEmail, modelName, prompt,
   };
   if (attachments.length > 0) {
     body.attachments = attachments;
+  }
+  if (metadata) {
+    body.metadata = metadata;
   }
   const res = await fetch(url, {
     method: 'POST',
@@ -264,6 +267,8 @@ const syncChatToAyo = async ({
   timezone,
   messageId,
   userId,
+  isRegenerate,
+  parentMessageId,
 }) => {
   if (!getBaseUrl()) {
     console.warn('[ayoDashboard] AYO_API_URL not set, skipping sync');
@@ -295,14 +300,34 @@ const syncChatToAyo = async ({
     }
   };
 
+  let chatMetadata = null;
+  let originalAyoChatId = null;
+
+  if (isRegenerate && parentMessageId && messageId) {
+    try {
+      const candidates = await getMessages({ conversationId, parentMessageId, isCreatedByUser: false });
+      const originalMsg = candidates.find((m) => m.messageId !== messageId);
+      if (originalMsg?.metadata?.ayo_chat_id) {
+        originalAyoChatId = originalMsg.metadata.ayo_chat_id;
+        chatMetadata = { regenerated_from: originalAyoChatId };
+      }
+    } catch (err) {
+      console.error('[ayoDashboard] Failed to look up original message for regeneration:', err);
+    }
+  }
+
   try {
     if (isNewConvo) {
       await withRefresh((t) => createConversation(t, { conversationId, modelName, timezone }));
     }
-    const chatData = await withRefresh((t) => createChat(t, { conversationId, userEmail, modelName, prompt, response, attachments, timezone }));
+    const chatData = await withRefresh((t) => createChat(t, { conversationId, userEmail, modelName, prompt, response, attachments, timezone, metadata: chatMetadata }));
     if (messageId && userId && chatData?.id) {
       updateMessage(userId, { messageId, metadata: { ayo_chat_id: chatData.id } }, { context: 'storeAyoChatId' })
         .catch((err) => console.error('[ayoDashboard] Failed to store ayo_chat_id on message:', err));
+    }
+    if (originalAyoChatId && chatData?.id) {
+      withRefresh((t) => updateChatMetadata(t, originalAyoChatId, { regeneration: chatData.id }))
+        .catch((err) => console.error('[ayoDashboard] Failed to update original chat metadata for regeneration:', err));
     }
   } catch (err) {
     if (err.status === 400 && err.message?.includes('does not exist')) {

@@ -201,8 +201,8 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
 
       const accessToken = req.session?.openidTokens?.accessToken ?? req.user?.federatedTokens?.access_token;
       const refreshToken = req.session?.openidTokens?.refreshToken ?? req.user?.federatedTokens?.refresh_token;
-      const syncToAyo = ({ modelName, prompt, response, isNewConvo, attachments = [], messageId }) =>
-        syncChatToAyo({ req, accessToken, refreshToken, conversationId, userEmail: req.user?.email, modelName, prompt, response, isNewConvo, attachments, timezone: req.headers['x-timezone'], messageId, userId: req.user?.id })
+      const syncToAyo = ({ modelName, prompt, response, isNewConvo, attachments = [], messageId, responseParentMessageId }) =>
+        syncChatToAyo({ req, accessToken, refreshToken, conversationId, userEmail: req.user?.email, modelName, prompt, response, isNewConvo, attachments, timezone: req.headers['x-timezone'], messageId, userId: req.user?.id, isRegenerate, parentMessageId: responseParentMessageId })
           .catch((err) => logger.error('[ayoDashboard] syncChatToAyo error', err));
 
       try {
@@ -315,7 +315,7 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
           const attachments = (userMessage?.files ?? [])
             .filter((f) => f.filename && f.type && f.filepath)
             .map((f) => ({ filename: f.filename, type: f.type, url: f.filepath }));
-          syncToAyo({ modelName: conversation.model, prompt: userMessage?.text ?? '', response: responseText, isNewConvo, attachments, messageId });
+          syncToAyo({ modelName: conversation.model, prompt: userMessage?.text ?? '', response: responseText, isNewConvo, attachments, messageId, responseParentMessageId: response.parentMessageId });
         } else if (!wasAbortedBeforeComplete && !responseText) {
           syncToAyo({
             modelName: conversation.model,
@@ -323,6 +323,7 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
             response: extractResponseText(response) || '[Error] An error occurred while generating a response.',
             isNewConvo,
             messageId,
+            responseParentMessageId: response.parentMessageId,
           });
         }
 
