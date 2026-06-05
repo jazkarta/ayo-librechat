@@ -14,6 +14,7 @@ import {
   apiBaseUrl,
   SystemRoles,
   setTokenHeader,
+  setTimezoneHeader,
   buildLoginRedirectUrl,
 } from 'librechat-data-provider';
 import type * as t from 'librechat-data-provider';
@@ -62,6 +63,7 @@ const AuthContextProvider = ({
         setUser(user);
         setToken(token);
         setTokenHeader(token);
+        setTimezoneHeader();
         setIsAuthenticated(isAuthenticated);
 
         const searchParams = new URLSearchParams(window.location.search);
