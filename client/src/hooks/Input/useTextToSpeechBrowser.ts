@@ -74,10 +74,16 @@ function useTextToSpeechBrowser({
     }
 
     const synth = window.speechSynthesis;
-    const voice = voices.find((v) => v.value === voiceName);
+    let voice = voices.find((v) => v.value === voiceName);
+
+    if (!voice && voices.length > 0) {
+      const isMacOS =
+        /Mac OS X/.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent);
+      const macFallback = isMacOS ? voices.find((v) => v.value === 'Samantha') : undefined;
+      voice = macFallback ?? voices[0];
+    }
 
     if (!voice) {
-      console.warn('Selected voice not found');
       return;
     }
 

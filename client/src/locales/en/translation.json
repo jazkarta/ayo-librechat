@@ -1448,6 +1448,8 @@
   "com_ui_speech_not_supported": "Your browser does not support speech recognition",
   "com_ui_speech_not_supported_use_external": "Your browser does not support speech recognition. Try switching to External STT in Settings > Speech.",
   "com_ui_speech_while_submitting": "Can't submit speech while a response is being generated",
+  "com_ui_speech_permission_error": "Microphone access was denied. Please allow microphone access in your browser and system settings, then try again.",
+  "com_ui_speech_network_error": "Speech recognition failed due to a network error. Make sure the page is served over HTTPS.",
   "com_ui_sr_global_prompt": "Global prompt group",
   "com_ui_stack_trace": "Stack Trace",
   "com_ui_status_prefix": "Status:",
