@@ -36,6 +36,28 @@ const useSpeechToTextBrowser = (
   const isListening = useMemo(() => listening, [listening]);
 
   useEffect(() => {
+    const recognition = SpeechRecognition.getRecognition();
+    if (!recognition) {
+      return;
+    }
+
+    const handleError = (event: Event) => {
+      const errorEvent = event as SpeechRecognitionErrorEvent;
+      if (errorEvent.error === 'no-speech' || errorEvent.error === 'aborted') {
+        return;
+      }
+      if (errorEvent.error === 'not-allowed' || errorEvent.error === 'service-not-allowed') {
+        showToast({ message: localize('com_ui_speech_permission_error'), status: 'error' });
+      } else if (errorEvent.error === 'network') {
+        showToast({ message: localize('com_ui_speech_network_error'), status: 'error' });
+      }
+    };
+
+    recognition.addEventListener('error', handleError);
+    return () => recognition.removeEventListener('error', handleError);
+  }, [localize, showToast]);
+
+  useEffect(() => {
     if (interimTranscript == null || interimTranscript === '') {
       return;
     }
