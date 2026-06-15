@@ -49,7 +49,7 @@ const Theme = ({ theme, onChange }: { theme: string; onChange: (value: string) =
         }
       }}
     >
-      {themeIcons[theme as ThemeType]}
+      {themeIcons[nextTheme as ThemeType]}
     </button>
   );
 };
