@@ -5,6 +5,7 @@ const { ContentTypes } = require('librechat-data-provider');
 const { unescapeLaTeX, countTokens, needsRefresh, getNewS3URL } = require('@librechat/api');
 const { findAllArtifacts, replaceArtifactContent } = require('~/server/services/Artifacts/update');
 const { requireJwtAuth, validateMessageReq } = require('~/server/middleware');
+const { syncChatMetadataToAyo } = require('~/server/services/ayoDashboard');
 const db = require('~/models');
 
 const router = express.Router();
@@ -426,20 +427,19 @@ router.put('/:conversationId/:messageId/feedback', validateMessageReq, async (re
     const { conversationId, messageId } = req.params;
     const { feedback } = req.body;
 
-    const updatedMessage = await db.updateMessage(
-      req?.user?.id,
-      {
-        messageId,
-        feedback: feedback || null,
-      },
-      { context: 'updateFeedback' },
-    );
+    const [updatedMessage, message] = await Promise.all([
+      db.updateMessage(req?.user?.id, { messageId, feedback: feedback || null }, { context: 'updateFeedback' }),
+      db.getMessage({ user: req.user.id, messageId }),
+    ]);
 
-    res.json({
-      messageId,
-      conversationId,
-      feedback: updatedMessage.feedback,
-    });
+    const ayoChatId = message?.metadata?.ayo_chat_id;
+    if (ayoChatId) {
+      syncChatMetadataToAyo(req, ayoChatId, feedback).catch((err) =>
+        logger.error('[ayoDashboard] syncChatMetadataToAyo error', err),
+      );
+    }
+
+    res.json({ messageId, conversationId, feedback: updatedMessage.feedback });
   } catch (error) {
     logger.error('Error updating message feedback:', error);
     res.status(500).json({ error: 'Failed to update feedback' });

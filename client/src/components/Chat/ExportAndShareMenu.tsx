@@ -2,11 +2,12 @@ import { useState, useId, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import * as Ariakit from '@ariakit/react';
 import { Upload, Share2 } from 'lucide-react';
-import { DropdownPopup, TooltipAnchor, useMediaQuery } from '@librechat/client';
+import { DropdownPopup, useMediaQuery } from '@librechat/client';
+import { SystemRoles } from 'librechat-data-provider';
 import type * as t from '~/common';
 import ExportModal from '~/components/Nav/ExportConversation/ExportModal';
 import { ShareButton } from '~/components/Conversations/ConvoOptions';
-import { useLocalize } from '~/hooks';
+import { useLocalize, useAuthContext } from '~/hooks';
 import store from '~/store';
 
 export default function ExportAndShareMenu({
@@ -15,6 +16,9 @@ export default function ExportAndShareMenu({
   isSharedButtonEnabled: boolean;
 }) {
   const localize = useLocalize();
+  const { user } = useAuthContext();
+  const isAdmin = user?.role === SystemRoles.ADMIN;
+
   const [showExports, setShowExports] = useState(false);
   const [isPopoverActive, setIsPopoverActive] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
@@ -58,6 +62,7 @@ export default function ExportAndShareMenu({
       label: localize('com_endpoint_export'),
       onClick: exportHandler,
       icon: <Upload className="icon-md mr-2 text-text-secondary" />,
+      show: isAdmin,
       /** NOTE: THE FOLLOWING PROPS ARE REQUIRED FOR MENU ITEMS THAT OPEN DIALOGS */
       hideOnClick: false,
       ref: exportButtonRef,
@@ -75,22 +80,17 @@ export default function ExportAndShareMenu({
         isOpen={isPopoverActive}
         setIsOpen={setIsPopoverActive}
         trigger={
-          <TooltipAnchor
-            description={localize('com_endpoint_export_share')}
-            render={
-              <Ariakit.MenuButton
-                id="export-menu-button"
-                aria-label="Export options"
-                className="inline-flex size-9 flex-shrink-0 items-center justify-center rounded-xl border border-border-light bg-presentation text-text-primary transition-all ease-in-out hover:bg-surface-tertiary disabled:pointer-events-none disabled:opacity-50 radix-state-open:bg-surface-tertiary"
-              >
-                <Share2
-                  className="icon-md text-text-primary"
-                  aria-hidden="true"
-                  focusable="false"
-                />
-              </Ariakit.MenuButton>
-            }
-          />
+          <Ariakit.MenuButton
+            id="export-menu-button"
+            aria-label="Export options"
+            className="inline-flex size-9 flex-shrink-0 items-center justify-center rounded-xl border border-border-light bg-presentation text-text-primary transition-all ease-in-out hover:bg-surface-tertiary disabled:pointer-events-none disabled:opacity-50 radix-state-open:bg-surface-tertiary"
+          >
+            <Share2
+              className="icon-md text-text-primary"
+              aria-hidden="true"
+              focusable="false"
+            />
+          </Ariakit.MenuButton>
         }
         items={dropdownItems}
         className={isSmallScreen ? '' : 'absolute right-0 top-0 mt-2'}
