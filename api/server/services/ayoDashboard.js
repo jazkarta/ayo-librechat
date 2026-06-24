@@ -4,6 +4,58 @@ const { getOpenIdConfig } = require('~/strategies/openidStrategy');
 
 const getBaseUrl = () => process.env.AYO_API_URL;
 
+// Guardrail events are written to Redis by litellm; consumed per turn here.
+let _guardrailRedis = null;
+const getGuardrailRedis = () => {
+  if (_guardrailRedis !== null) {
+    return _guardrailRedis || null;
+  }
+  const uri = process.env.REDIS_URI;
+  if (!uri) {
+    _guardrailRedis = false;
+    return null;
+  }
+  try {
+    const Redis = require('ioredis');
+    _guardrailRedis = new Redis(uri, { maxRetriesPerRequest: 2 });
+    _guardrailRedis.on('error', (e) => console.error('[ayoGuardrails] Redis error:', e.message));
+  } catch (e) {
+    console.error('[ayoGuardrails] Failed to init Redis client:', e.message);
+    _guardrailRedis = false;
+    return null;
+  }
+  return _guardrailRedis;
+};
+
+const readGuardrails = async (conversationId) => {
+  if (!conversationId) {
+    return [];
+  }
+  const client = getGuardrailRedis();
+  if (!client) {
+    return [];
+  }
+  const key = `ayo:guardrails:${conversationId}`;
+  try {
+    const entries = await client.lrange(key, 0, -1);
+    if (entries.length > 0) {
+      await client.del(key);
+    }
+    return entries
+      .map((e) => {
+        try {
+          return JSON.parse(e);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  } catch (e) {
+    console.error(`[ayoGuardrails] Redis read failed for key=${key}:`, e.message);
+    return [];
+  }
+};
+
 const getCurrentUserInfo = async (token) => {
   const url = `${getBaseUrl()}/api/users/me/`;
   const res = await fetch(url, {
@@ -314,6 +366,11 @@ const syncChatToAyo = async ({
     } catch (err) {
       console.error('[ayoDashboard] Failed to look up original message for regeneration:', err);
     }
+  }
+
+  const guardrails = await readGuardrails(conversationId);
+  if (guardrails.length > 0) {
+    chatMetadata = { ...(chatMetadata || {}), guardrails };
   }
 
   try {
