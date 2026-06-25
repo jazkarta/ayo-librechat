@@ -192,6 +192,48 @@ const callWithRefresh = async (req, accessToken, refreshToken, fn) => {
   }
 };
 
+const _guardrailsCache = new Map();
+const GUARDRAILS_CACHE_TTL_MS = 5 * 60 * 1000;
+
+const getAyoGuardrails = async (token) => {
+  const url = `${getBaseUrl()}/api/chats/guardrails/`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    const err = new Error(`getAyoGuardrails failed: ${res.status} ${body}`);
+    err.status = res.status;
+    throw err;
+  }
+  const data = await res.json();
+  return Array.isArray(data?.guardrails) ? data.guardrails : [];
+};
+
+const loadAyoGuardrails = async (req) => {
+  if (!getBaseUrl()) {
+    return [];
+  }
+  const userId = req.user?.id;
+  const cached = userId ? _guardrailsCache.get(userId) : null;
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
+  if (cached) {
+    _guardrailsCache.delete(userId);
+  }
+  const { accessToken, refreshToken } = getTokensFromReq(req);
+  if (!accessToken) {
+    return [];
+  }
+  const value = await callWithRefresh(req, accessToken, refreshToken, (t) => getAyoGuardrails(t));
+  if (userId) {
+    _guardrailsCache.set(userId, { value, expiresAt: Date.now() + GUARDRAILS_CACHE_TTL_MS });
+  }
+  return value;
+};
+
 const markConversationDeleted = async (token, conversationId) => {
   const url = `${getBaseUrl()}/api/chats/conversations/mark-deleted/`;
   const res = await fetch(url, {
@@ -400,4 +442,4 @@ const syncChatToAyo = async ({
   }
 };
 
-module.exports = { syncChatToAyo, syncConversationDeleteToAyo, syncChatMetadataToAyo, updateConversationTitle, refreshAccessToken, isTokenExpired, getCurrentUserInfo, extractResponseText };
+module.exports = { syncChatToAyo, syncConversationDeleteToAyo, syncChatMetadataToAyo, updateConversationTitle, refreshAccessToken, isTokenExpired, getCurrentUserInfo, extractResponseText, loadAyoGuardrails };

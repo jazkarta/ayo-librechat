@@ -17,21 +17,12 @@ import { standardCache } from '~/cache';
 
 const { PROXY } = process.env;
 
-const AYO_GUARDRAILS = [
-  // 'Block Code Execution',
-  // 'Prompt Injection: Malicious Code',
-  // 'Prompt Injection: Data Exfiltration',
-  // 'Prompt Injection: System Prompt',
-  // 'Harmful Illegal Weapons',
-  'Harmful Self-Harm',
-  // 'semantic-child-safety',
-];
-
 /**
  * Builds custom options from endpoint configuration
  */
 function buildCustomOptions(
   endpointConfig: Partial<TEndpoint>,
+  ayoGuardrails: string[],
   appConfig?: AppConfig,
   endpointTokenConfig?: Record<string, unknown>,
 ) {
@@ -39,7 +30,7 @@ function buildCustomOptions(
     headers: endpointConfig.headers,
     addParams:
       endpointConfig.name === 'LiteLLM'
-        ? { ...(endpointConfig.addParams ?? {}), guardrails: AYO_GUARDRAILS }
+        ? { ...(endpointConfig.addParams ?? {}), guardrails: ayoGuardrails }
         : endpointConfig.addParams,
     dropParams: endpointConfig.dropParams,
     customParams: endpointConfig.customParams,
@@ -172,7 +163,13 @@ export async function initializeCustom({
     endpointTokenConfig = (await cache.get(tokenKey)) as EndpointTokenConfig | undefined;
   }
 
-  const customOptions = buildCustomOptions(endpointConfig, appConfig, endpointTokenConfig);
+  const AYO_GUARDRAILS = req.ayoGuardrails ?? [];
+  const customOptions = buildCustomOptions(
+    endpointConfig,
+    AYO_GUARDRAILS,
+    appConfig,
+    endpointTokenConfig,
+  );
 
   const clientOptions: Record<string, unknown> = {
     reverseProxyUrl: baseURL ?? null,
