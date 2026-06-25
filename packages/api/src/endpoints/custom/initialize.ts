@@ -17,6 +17,16 @@ import { standardCache } from '~/cache';
 
 const { PROXY } = process.env;
 
+const AYO_GUARDRAILS = [
+  // 'Block Code Execution',
+  // 'Prompt Injection: Malicious Code',
+  // 'Prompt Injection: Data Exfiltration',
+  // 'Prompt Injection: System Prompt',
+  // 'Harmful Illegal Weapons',
+  'Harmful Self-Harm',
+  // 'semantic-child-safety',
+];
+
 /**
  * Builds custom options from endpoint configuration
  */
@@ -27,7 +37,10 @@ function buildCustomOptions(
 ) {
   const customOptions: Record<string, unknown> = {
     headers: endpointConfig.headers,
-    addParams: endpointConfig.addParams,
+    addParams:
+      endpointConfig.name === 'LiteLLM'
+        ? { ...(endpointConfig.addParams ?? {}), guardrails: AYO_GUARDRAILS }
+        : endpointConfig.addParams,
     dropParams: endpointConfig.dropParams,
     customParams: endpointConfig.customParams,
     titleConvo: endpointConfig.titleConvo,

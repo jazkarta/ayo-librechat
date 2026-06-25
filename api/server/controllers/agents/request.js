@@ -13,7 +13,7 @@ const { disposeClient, clientRegistry, requestDataMap } = require('~/server/clea
 const { handleAbortError } = require('~/server/middleware');
 const { logViolation } = require('~/cache');
 const { saveMessage } = require('~/models');
-const { syncChatToAyo, extractResponseText } = require('~/server/services/ayoDashboard');
+const { syncChatToAyo, extractResponseText, loadAyoGuardrails } = require('~/server/services/ayoDashboard');
 
 function createCloseHandler(abortController) {
   return function (manual) {
@@ -151,6 +151,12 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
         partialResponseSaved = false;
       }
     });
+
+    try {
+      req.ayoGuardrails = await loadAyoGuardrails(req);
+    } catch (err) {
+      logger.warn('[ayoDashboard] loadAyoGuardrails failed', { status: err.status, message: err.message });
+    }
 
     /** @type {{ client: TAgentClient; userMCPAuthMap?: Record<string, Record<string, string>> }} */
     const result = await initializeClient({
@@ -572,6 +578,12 @@ const _LegacyAgentController = async (req, res, next, initializeClient, addTitle
       }
     };
     cleanupHandlers.push(removePrelimHandler);
+
+    try {
+      req.ayoGuardrails = await loadAyoGuardrails(req);
+    } catch (err) {
+      logger.warn('[ayoDashboard] loadAyoGuardrails failed', { status: err.status, message: err.message });
+    }
 
     /** @type {{ client: TAgentClient; userMCPAuthMap?: Record<string, Record<string, string>> }} */
     const result = await initializeClient({
