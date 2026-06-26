@@ -193,7 +193,7 @@ const callWithRefresh = async (req, accessToken, refreshToken, fn) => {
 };
 
 const _guardrailsCache = new Map();
-const GUARDRAILS_CACHE_TTL_MS = 5 * 60 * 1000;
+const GUARDRAILS_CACHE_TTL_MS = 20 * 60 * 1000;
 
 const getAyoGuardrails = async (token) => {
   const url = `${getBaseUrl()}/api/chats/guardrails/`;
@@ -211,17 +211,14 @@ const getAyoGuardrails = async (token) => {
   return Array.isArray(data?.guardrails) ? data.guardrails : [];
 };
 
-const loadAyoGuardrails = async (req) => {
+const loadAyoGuardrails = async (req, conversationId) => {
   if (!getBaseUrl()) {
     return [];
   }
   const userId = req.user?.id;
   const cached = userId ? _guardrailsCache.get(userId) : null;
-  if (cached && cached.expiresAt > Date.now()) {
+  if (cached && cached.conversationId === conversationId && cached.expiresAt > Date.now()) {
     return cached.value;
-  }
-  if (cached) {
-    _guardrailsCache.delete(userId);
   }
   const { accessToken, refreshToken } = getTokensFromReq(req);
   if (!accessToken) {
@@ -229,7 +226,7 @@ const loadAyoGuardrails = async (req) => {
   }
   const value = await callWithRefresh(req, accessToken, refreshToken, (t) => getAyoGuardrails(t));
   if (userId) {
-    _guardrailsCache.set(userId, { value, expiresAt: Date.now() + GUARDRAILS_CACHE_TTL_MS });
+    _guardrailsCache.set(userId, { conversationId, value, expiresAt: Date.now() + GUARDRAILS_CACHE_TTL_MS });
   }
   return value;
 };

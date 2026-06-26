@@ -153,7 +153,7 @@ const ResumableAgentController = async (req, res, next, initializeClient, addTit
     });
 
     try {
-      req.ayoGuardrails = await loadAyoGuardrails(req);
+      req.ayoGuardrails = await loadAyoGuardrails(req, conversationId);
     } catch (err) {
       logger.warn('[ayoDashboard] loadAyoGuardrails failed', { status: err.status, message: err.message });
     }
@@ -580,7 +580,7 @@ const _LegacyAgentController = async (req, res, next, initializeClient, addTitle
     cleanupHandlers.push(removePrelimHandler);
 
     try {
-      req.ayoGuardrails = await loadAyoGuardrails(req);
+      req.ayoGuardrails = await loadAyoGuardrails(req, conversationId);
     } catch (err) {
       logger.warn('[ayoDashboard] loadAyoGuardrails failed', { status: err.status, message: err.message });
     }
