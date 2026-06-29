@@ -23,6 +23,7 @@ const { PROXY } = process.env;
 function buildCustomOptions(
   endpointConfig: Partial<TEndpoint>,
   ayoGuardrails: string[],
+  ayoWebSearch: boolean,
   appConfig?: AppConfig,
   endpointTokenConfig?: Record<string, unknown>,
 ) {
@@ -30,7 +31,7 @@ function buildCustomOptions(
     headers: endpointConfig.headers,
     addParams:
       endpointConfig.name === 'LiteLLM'
-        ? { ...(endpointConfig.addParams ?? {}), guardrails: ayoGuardrails }
+        ? { ...(endpointConfig.addParams ?? {}), guardrails: ayoGuardrails, web_search: ayoWebSearch }
         : endpointConfig.addParams,
     dropParams: endpointConfig.dropParams,
     customParams: endpointConfig.customParams,
@@ -164,9 +165,11 @@ export async function initializeCustom({
   }
 
   const AYO_GUARDRAILS = req.ayoGuardrails ?? [];
+  const AYO_WEB_SEARCH = req.ayoWebSearch ?? false;
   const customOptions = buildCustomOptions(
     endpointConfig,
     AYO_GUARDRAILS,
+    AYO_WEB_SEARCH,
     appConfig,
     endpointTokenConfig,
   );

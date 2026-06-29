@@ -22,4 +22,5 @@ export type ServerRequest = Request<unknown, unknown, RequestBody> & {
   user?: IUser;
   config?: AppConfig;
   ayoGuardrails?: string[];
+  ayoWebSearch?: boolean;
 };

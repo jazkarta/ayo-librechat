@@ -231,6 +231,33 @@ const loadAyoGuardrails = async (req, conversationId) => {
   return value;
 };
 
+const getAyoGlobalConfig = async (token) => {
+  const url = `${getBaseUrl()}/api/configurations/global-configurations/`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    const err = new Error(`getAyoGlobalConfig failed: ${res.status} ${body}`);
+    err.status = res.status;
+    throw err;
+  }
+  const data = await res.json();
+  return { webSearch: data?.web_search === true };
+};
+
+const loadAyoGlobalConfig = async (req) => {
+  if (!getBaseUrl()) {
+    return { webSearch: false };
+  }
+  const { accessToken, refreshToken } = getTokensFromReq(req);
+  if (!accessToken) {
+    return { webSearch: false };
+  }
+  return callWithRefresh(req, accessToken, refreshToken, (t) => getAyoGlobalConfig(t));
+};
+
 const markConversationDeleted = async (token, conversationId) => {
   const url = `${getBaseUrl()}/api/chats/conversations/mark-deleted/`;
   const res = await fetch(url, {
@@ -439,4 +466,4 @@ const syncChatToAyo = async ({
   }
 };
 
-module.exports = { syncChatToAyo, syncConversationDeleteToAyo, syncChatMetadataToAyo, updateConversationTitle, refreshAccessToken, isTokenExpired, getCurrentUserInfo, extractResponseText, loadAyoGuardrails };
+module.exports = { syncChatToAyo, syncConversationDeleteToAyo, syncChatMetadataToAyo, updateConversationTitle, refreshAccessToken, isTokenExpired, getCurrentUserInfo, extractResponseText, loadAyoGuardrails, loadAyoGlobalConfig };
