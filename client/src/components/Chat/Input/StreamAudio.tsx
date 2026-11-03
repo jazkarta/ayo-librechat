@@ -7,7 +7,7 @@ import type { TMessage } from 'librechat-data-provider';
 import { useCustomAudioRef, MediaSourceAppender, usePauseGlobalAudio } from '~/hooks/Audio';
 import { getLatestText, logger } from '~/utils';
 import { useAuthContext } from '~/hooks';
-import { globalAudioId } from '~/common';
+import { globalAudioId, PARTICIPANT_LOCKDOWN } from '~/common';
 import store from '~/store';
 
 function timeoutPromise(ms: number, message?: string) {
@@ -22,7 +22,7 @@ const maxPromiseTime = 15000;
 export default function StreamAudio({ index = 0 }) {
   const { token } = useAuthContext();
 
-  const cacheTTS = useRecoilValue(store.cacheTTS);
+  const cacheTTS = useRecoilValue(store.cacheTTS) && !PARTICIPANT_LOCKDOWN;
   const playbackRate = useRecoilValue(store.playbackRate);
 
   const voice = useRecoilValue(store.voice);
