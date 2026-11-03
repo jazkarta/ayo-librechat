@@ -22,6 +22,7 @@ import {
   DecibelSelector,
 } from './STT';
 import ConversationModeSwitch from './ConversationModeSwitch';
+import { PARTICIPANT_LOCKDOWN } from '~/common';
 import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
 import store from '~/store';
@@ -233,7 +234,7 @@ function Speech() {
           <div className="pb-2">
             <PlaybackRate />
           </div>
-          <CacheTTSSwitch />
+          {!PARTICIPANT_LOCKDOWN && <CacheTTSSwitch />}
         </div>
       </Tabs.Content>
     </Tabs.Root>

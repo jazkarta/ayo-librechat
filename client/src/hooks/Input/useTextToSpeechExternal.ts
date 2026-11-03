@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 import { useToastContext } from '@librechat/client';
 import { useTextToSpeechMutation, useVoicesQuery } from '~/data-provider';
+import { PARTICIPANT_LOCKDOWN } from '~/common';
 import { useLocalize } from '~/hooks';
 import store from '~/store';
 
@@ -30,7 +31,7 @@ function useTextToSpeechExternal({
   const localize = useLocalize();
   const { showToast } = useToastContext();
   const voice = useRecoilValue(store.voice);
-  const cacheTTS = useRecoilValue(store.cacheTTS);
+  const cacheTTS = useRecoilValue(store.cacheTTS) && !PARTICIPANT_LOCKDOWN;
   const playbackRate = useRecoilValue(store.playbackRate);
 
   const [downloadFile, setDownloadFile] = useState(false);
