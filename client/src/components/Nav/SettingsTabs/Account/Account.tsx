@@ -4,6 +4,7 @@ import DeleteAccount from './DeleteAccount';
 import Avatar from './Avatar';
 import EnableTwoFactorItem from './TwoFactorAuthentication';
 import BackupCodesItem from './BackupCodesItem';
+import { PARTICIPANT_LOCKDOWN } from '~/common';
 import { useAuthContext } from '~/hooks';
 
 function Account() {
@@ -14,9 +15,11 @@ function Account() {
       <div className="pb-3">
         <DisplayUsernameMessages />
       </div>
-      <div className="pb-3">
-        <Avatar />
-      </div>
+      {!PARTICIPANT_LOCKDOWN && (
+        <div className="pb-3">
+          <Avatar />
+        </div>
+      )}
       {user?.provider === 'local' && (
         <>
           <div className="pb-3">
@@ -29,9 +32,11 @@ function Account() {
           )}
         </>
       )}
-      <div className="pb-3">
-        <DeleteAccount />
-      </div>
+      {!PARTICIPANT_LOCKDOWN && (
+        <div className="pb-3">
+          <DeleteAccount />
+        </div>
+      )}
     </div>
   );
 }

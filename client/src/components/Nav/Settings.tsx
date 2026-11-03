@@ -25,7 +25,16 @@ import {
 import usePersonalizationAccess from '~/hooks/usePersonalizationAccess';
 import { useLocalize, TranslationKeys } from '~/hooks';
 import { useGetStartupConfig } from '~/data-provider';
+import { PARTICIPANT_LOCKDOWN } from '~/common';
 import { cn } from '~/utils';
+
+const participantLockedTabs = new Set<SettingsTabValues>([
+  SettingsTabValues.COMMANDS,
+  SettingsTabValues.DATA,
+]);
+
+const isTabVisible = (tab: SettingsTabValues) =>
+  !PARTICIPANT_LOCKDOWN || !participantLockedTabs.has(tab);
 
 export default function Settings({ open, onOpenChange }: TDialogProps) {
   const isSmallScreen = useMediaQuery('(max-width: 767px)');
@@ -45,7 +54,7 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
       SettingsTabValues.DATA,
       ...(startupConfig?.balance?.enabled ? [SettingsTabValues.BALANCE] : []),
       SettingsTabValues.ACCOUNT,
-    ];
+    ].filter(isTabVisible);
     const currentIndex = tabs.indexOf(activeTab);
 
     switch (event.key) {
@@ -202,22 +211,24 @@ export default function Settings({ open, onOpenChange }: TDialogProps) {
                     )}
                     onKeyDown={handleKeyDown}
                   >
-                    {settingsTabs.map(({ value, icon, label }) => (
-                      <Tabs.Trigger
-                        key={value}
-                        className={cn(
-                          'group relative z-10 m-1 flex items-center justify-start gap-2 rounded-xl px-2 py-1.5 transition-all duration-200 ease-in-out',
-                          isSmallScreen
-                            ? 'flex-1 justify-center text-nowrap p-1 px-3 text-sm text-text-secondary radix-state-active:bg-surface-hover radix-state-active:text-text-primary'
-                            : 'bg-transparent text-text-secondary radix-state-active:bg-surface-tertiary radix-state-active:text-text-primary',
-                        )}
-                        value={value}
-                        ref={(el) => (tabRefs.current[value] = el)}
-                      >
-                        {icon}
-                        {localize(label)}
-                      </Tabs.Trigger>
-                    ))}
+                    {settingsTabs
+                      .filter(({ value }) => isTabVisible(value))
+                      .map(({ value, icon, label }) => (
+                        <Tabs.Trigger
+                          key={value}
+                          className={cn(
+                            'group relative z-10 m-1 flex items-center justify-start gap-2 rounded-xl px-2 py-1.5 transition-all duration-200 ease-in-out',
+                            isSmallScreen
+                              ? 'flex-1 justify-center text-nowrap p-1 px-3 text-sm text-text-secondary radix-state-active:bg-surface-hover radix-state-active:text-text-primary'
+                              : 'bg-transparent text-text-secondary radix-state-active:bg-surface-tertiary radix-state-active:text-text-primary',
+                          )}
+                          value={value}
+                          ref={(el) => (tabRefs.current[value] = el)}
+                        >
+                          {icon}
+                          {localize(label)}
+                        </Tabs.Trigger>
+                      ))}
                   </Tabs.List>
                   <div className="overflow-auto sm:w-full sm:max-w-none md:pr-0.5 md:pt-0.5">
                     <Tabs.Content value={SettingsTabValues.GENERAL} tabIndex={-1}>

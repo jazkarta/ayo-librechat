@@ -4,6 +4,7 @@ import FontSizeSelector from './FontSizeSelector';
 import { ForkSettings } from './ForkSettings';
 import ChatDirection from './ChatDirection';
 import ToggleSwitch from '../ToggleSwitch';
+import { PARTICIPANT_LOCKDOWN } from '~/common';
 import store from '~/store';
 
 const toggleSwitchConfigs = [
@@ -100,6 +101,16 @@ const toggleSwitchConfigs = [
   },
 ];
 
+const participantLockedSwitches = new Set([
+  'alwaysMakeProd',
+  'modularChat',
+  'defaultTemporaryChat',
+]);
+
+const visibleToggleSwitchConfigs = PARTICIPANT_LOCKDOWN
+  ? toggleSwitchConfigs.filter((config) => !participantLockedSwitches.has(config.key))
+  : toggleSwitchConfigs;
+
 function Chat() {
   return (
     <div className="flex flex-col gap-3 p-1 text-sm text-text-primary">
@@ -109,7 +120,7 @@ function Chat() {
       <div className="pb-3">
         <ChatDirection />
       </div>
-      {toggleSwitchConfigs.map((config) => (
+      {visibleToggleSwitchConfigs.map((config) => (
         <div key={config.key} className="pb-3">
           <ToggleSwitch
             stateAtom={config.stateAtom}
@@ -119,7 +130,7 @@ function Chat() {
           />
         </div>
       ))}
-      <ForkSettings />
+      {!PARTICIPANT_LOCKDOWN && <ForkSettings />}
     </div>
   );
 }

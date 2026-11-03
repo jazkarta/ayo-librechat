@@ -21,9 +21,9 @@ import {
   useLocalize,
 } from '~/hooks';
 import { useGetConvoIdQuery, useGetStartupConfig, useGetEndpointsQuery } from '~/data-provider';
+import { NotificationSeverity, PARTICIPANT_LOCKDOWN } from '~/common';
 import { ToolCallsMapProvider } from '~/Providers';
 import ChatView from '~/components/Chat/ChatView';
-import { NotificationSeverity } from '~/common';
 import useAuthRedirect from './useAuthRedirect';
 import temporaryStore from '~/store/temporary';
 import store from '~/store';
@@ -66,7 +66,7 @@ export default function ChatRoute() {
 
   useEffect(() => {
     if (conversationId === Constants.NEW_CONVO) {
-      setIsTemporary(defaultTemporaryChat);
+      setIsTemporary(!PARTICIPANT_LOCKDOWN && defaultTemporaryChat);
     } else if (isTemporaryChat) {
       setIsTemporary(isTemporaryChat);
     } else {

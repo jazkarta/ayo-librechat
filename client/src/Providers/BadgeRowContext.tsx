@@ -10,6 +10,7 @@ import {
   useToolToggle,
 } from '~/hooks';
 import { getTimestampedValue } from '~/utils/timestamps';
+import { PARTICIPANT_LOCKDOWN } from '~/common';
 import { useGetStartupConfig } from '~/data-provider';
 import { ephemeralAgentByConvoId } from '~/store';
 
@@ -136,7 +137,7 @@ export default function BadgeRowProvider({
         }
       }
 
-      if (artifactsToggleValue !== null) {
+      if (!PARTICIPANT_LOCKDOWN && artifactsToggleValue !== null) {
         try {
           initialValues[AgentCapabilities.artifacts] = JSON.parse(artifactsToggleValue);
         } catch (e) {
