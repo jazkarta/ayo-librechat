@@ -16,6 +16,7 @@ import {
 import { useLocalize, useNavigateToConvo, useNewConvo } from '~/hooks';
 import { NotificationSeverity } from '~/common';
 import { useChatContext } from '~/Providers';
+import { PARTICIPANT_LOCKDOWN } from '~/common';
 import DeleteButton from './DeleteButton';
 import ShareButton from './ShareButton';
 import { cn } from '~/utils';
@@ -189,7 +190,7 @@ function ConvoOptions({
         label: localize('com_ui_share'),
         onClick: shareHandler,
         icon: <Share2 className="icon-sm mr-2 text-text-primary" aria-hidden="true" />,
-        show: startupConfig && startupConfig.sharedLinksEnabled,
+        show: !PARTICIPANT_LOCKDOWN && startupConfig && startupConfig.sharedLinksEnabled,
         ariaHasPopup: 'dialog' as const,
         ariaControls: 'share-conversation-dialog',
         /** NOTE: THE FOLLOWING PROPS ARE REQUIRED FOR MENU ITEMS THAT OPEN DIALOGS */
@@ -204,6 +205,7 @@ function ConvoOptions({
       },
       {
         label: localize('com_ui_duplicate'),
+        show: !PARTICIPANT_LOCKDOWN,
         onClick: handleDuplicateClick,
         hideOnClick: false,
         icon: isDuplicateLoading ? (
@@ -214,6 +216,7 @@ function ConvoOptions({
       },
       {
         label: localize('com_ui_archive'),
+        show: !PARTICIPANT_LOCKDOWN,
         onClick: handleArchiveClick,
         hideOnClick: false,
         icon: isArchiveLoading ? (
@@ -224,6 +227,7 @@ function ConvoOptions({
       },
       {
         label: localize('com_ui_delete'),
+        show: !PARTICIPANT_LOCKDOWN,
         onClick: deleteHandler,
         icon: <Trash className="icon-sm mr-2 text-text-primary" aria-hidden="true" />,
         ariaHasPopup: 'dialog' as const,

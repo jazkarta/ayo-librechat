@@ -15,6 +15,7 @@ import CodeInterpreter from './CodeInterpreter';
 import { BadgeRowProvider } from '~/Providers';
 import ToolsDropdown from './ToolsDropdown';
 import type { BadgeItem } from '~/common';
+import { PARTICIPANT_LOCKDOWN } from '~/common';
 import { useChatBadges } from '~/hooks';
 import ToolDialogs from './ToolDialogs';
 import FileSearch from './FileSearch';
@@ -373,7 +374,7 @@ function BadgeRow({
             <WebSearch />
             <CodeInterpreter />
             <FileSearch />
-            <Artifacts />
+            {!PARTICIPANT_LOCKDOWN && <Artifacts />}
             <MCPSelect />
           </>
         )}

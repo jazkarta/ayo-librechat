@@ -7,6 +7,7 @@ import { SystemRoles } from 'librechat-data-provider';
 import type * as t from '~/common';
 import ExportModal from '~/components/Nav/ExportConversation/ExportModal';
 import { ShareButton } from '~/components/Conversations/ConvoOptions';
+import { PARTICIPANT_LOCKDOWN } from '~/common';
 import { useLocalize, useAuthContext } from '~/hooks';
 import store from '~/store';
 
@@ -35,7 +36,7 @@ export default function ExportAndShareMenu({
     conversation.conversationId !== 'new' &&
     conversation.conversationId !== 'search';
 
-  if (exportable === false) {
+  if (PARTICIPANT_LOCKDOWN || exportable === false) {
     return null;
   }
 

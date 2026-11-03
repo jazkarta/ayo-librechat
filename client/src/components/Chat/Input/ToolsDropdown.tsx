@@ -14,6 +14,7 @@ import { useLocalize, useHasAccess, useAgentCapabilities } from '~/hooks';
 import ArtifactsSubMenu from '~/components/Chat/Input/ArtifactsSubMenu';
 import MCPSubMenu from '~/components/Chat/Input/MCPSubMenu';
 import { useGetStartupConfig } from '~/data-provider';
+import { PARTICIPANT_LOCKDOWN } from '~/common';
 import { useBadgeRowContext } from '~/Providers';
 import { cn } from '~/utils';
 
@@ -274,7 +275,7 @@ const ToolsDropdown = ({ disabled }: ToolsDropdownProps) => {
     });
   }
 
-  if (artifactsEnabled) {
+  if (artifactsEnabled && !PARTICIPANT_LOCKDOWN) {
     dropdownItems.push({
       hideOnClick: false,
       render: (props) => (

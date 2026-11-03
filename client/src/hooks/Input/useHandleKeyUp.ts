@@ -3,6 +3,7 @@ import { useSetRecoilState, useRecoilValue } from 'recoil';
 import { PermissionTypes, Permissions } from 'librechat-data-provider';
 import type { SetterOrUpdater } from 'recoil';
 import useHasAccess from '~/hooks/Roles/useHasAccess';
+import { PARTICIPANT_LOCKDOWN } from '~/common';
 import store from '~/store';
 
 /** Event Keys that shouldn't trigger a command */
@@ -63,13 +64,13 @@ const useHandleKeyUp = ({
   const slashCommandEnabled = useRecoilValue(store.slashCommand);
 
   const handleAtCommand = useCallback(() => {
-    if (atCommandEnabled && shouldTriggerCommand(textAreaRef, '@')) {
+    if (!PARTICIPANT_LOCKDOWN && atCommandEnabled && shouldTriggerCommand(textAreaRef, '@')) {
       setShowMentionPopover(true);
     }
   }, [textAreaRef, setShowMentionPopover, atCommandEnabled]);
 
   const handlePlusCommand = useCallback(() => {
-    if (!hasMultiConvoAccess || !plusCommandEnabled) {
+    if (PARTICIPANT_LOCKDOWN || !hasMultiConvoAccess || !plusCommandEnabled) {
       return;
     }
     if (shouldTriggerCommand(textAreaRef, '+')) {
@@ -78,7 +79,7 @@ const useHandleKeyUp = ({
   }, [textAreaRef, setShowPlusPopover, plusCommandEnabled, hasMultiConvoAccess]);
 
   const handlePromptsCommand = useCallback(() => {
-    if (!hasPromptsAccess || !slashCommandEnabled) {
+    if (PARTICIPANT_LOCKDOWN || !hasPromptsAccess || !slashCommandEnabled) {
       return;
     }
     if (shouldTriggerCommand(textAreaRef, '/')) {
